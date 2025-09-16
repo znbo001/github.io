@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>月度值班表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Tailwind 配置：浅色系设计 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#E0EBFF',   // 主色调：浅蓝
+                        secondary: '#D1FAE5', // 辅助色：浅绿
+                        accent: '#FEF3C7',    // 强调色：浅橙
+                        neutral: '#F3F4F6',   // 中性色：浅灰
+                        darkText: '#1F2937',  // 深色文字
+                        // 值班人员专属浅色系
+                        person1: '#E0EBFF',   // 陈琛 - 浅蓝
+                        person2: '#D1FAE5',   // 李义宗 - 浅绿
+                        person3: '#FEF3C7',   // 张俊博 - 浅橙
+                        person4: '#FEE2E2',   // 赵予 - 浅红
+                        person5: '#F3E8FF',   // 张宁勃 - 浅紫
+                        person6: '#FCE7F3',   // 杨虎 - 浅粉
+                        person7: '#CFFAFE',   // 张慧杰 - 浅青
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .shadow-soft {
+                box-shadow: 0 2px 15px rgba(0, 0, 0, 0.03);
+            }
+            .transition-custom {
+                transition: all 0.3s ease;
+            }
+            .person-badge {
+                @apply w-full px-2 py-1.5 rounded text-darkText text-sm font-medium block shadow-sm text-center;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-darkText">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-calendar-check-o text-primary text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold text-darkText">值班安排表</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:block text-gray-600" id="current-date-display"></div>
+                <button id="today-btn" class="bg-primary hover:bg-primary/80 text-darkText px-4 py-2 rounded-lg transition-custom flex items-center">
+                    <i class="fa fa-home mr-2"></i>
+                    <span>今天</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 月份导航 -->
+        <div class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-soft">
+            <button id="prev-month" class="p-2 rounded-full hover:bg-neutral transition-custom">
+                <i class="fa fa-chevron-left text-gray-600"></i>
+            </button>
+            <h2 id="current-month" class="text-xl md:text-2xl font-semibold text-darkText"></h2>
+            <button id="next-month" class="p-2 rounded-full hover:bg-neutral transition-custom">
+                <i class="fa fa-chevron-right text-gray-600"></i>
+            </button>
+        </div>
+        
+        <!-- 值班人员列表 -->
+        <div class="mb-8 bg-white p-4 rounded-xl shadow-soft">
+            <h3 class="text-lg font-semibold mb-3 flex items-center text-darkText">
+                <i class="fa fa-users text-primary mr-2"></i>
+                值班人员列表
+            </h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3" id="personnel-list">
+                <!-- 值班人员将通过JS动态生成 -->
+            </div>
+        </div>
+        
+        <!-- 今日及明日值班提示 -->
+        <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div id="today-duty" class="bg-white p-4 rounded-lg shadow-soft border-t-4 border-primary">
+                <h3 class="font-semibold mb-3 flex items-center text-darkText">
+                    <i class="fa fa-sun-o text-gray-600 mr-2"></i>
+                    <span>今日值班</span>
+                </h3>
+                <div class="duty-persons space-y-2 mt-1">
+                    <!-- 今日值班人员将通过JS动态生成 -->
+                </div>
+            </div>
+            <div id="tomorrow-duty" class="bg-white p-4 rounded-lg shadow-soft border-t-4 border-accent">
+                <h3 class="font-semibold mb-3 flex items-center text-darkText">
+                    <i class="fa fa-moon-o text-gray-600 mr-2"></i>
+                    <span>明日值班</span>
+                </h3>
+                <div class="duty-persons space-y-2 mt-1">
+                    <!-- 明日值班人员将通过JS动态生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 日历网格 -->
+        <div class="bg-white rounded-xl shadow-soft overflow-hidden">
+            <!-- 星期标题 -->
+            <div class="grid grid-cols-7 border-b bg-neutral">
+                <div class="p-3 text-center font-medium text-gray-600">周日</div>
+                <div class="p-3 text-center font-medium text-gray-600 bg-gray-100">周一</div>
+                <div class="p-3 text-center font-medium text-gray-600">周二</div>
+                <div class="p-3 text-center font-medium text-gray-600">周三</div>
+                <div class="p-3 text-center font-medium text-gray-600">周四</div>
+                <div class="p-3 text-center font-medium text-gray-600">周五</div>
+                <div class="p-3 text-center font-medium text-gray-600">周六</div>
+            </div>
+            
+            <!-- 日历单元格 -->
+            <div id="calendar-grid" class="grid grid-cols-7 auto-rows-fr">
+                <!-- 日历内容将通过JS动态生成 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-100 text-gray-600 py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; <span id="current-year"></span> 值班安排系统 | 设计与开发</p>
+            <p class="text-sm text-gray-500 mt-2">最后更新: 2025年9月</p>
+        </div>
+    </footer>
+
+    <script>
+        // 值班人员列表及对应的浅色系
+        const personnel = [
+            { name: "陈琛", color: "person1" },
+            { name: "李义宗", color: "person2" },
+            { name: "张俊博", color: "person3" },
+            { name: "赵予", color: "person4" },
+            { name: "张宁勃", color: "person5" },
+            { name: "杨虎", color: "person6" },
+            { name: "张慧杰", color: "person7" }  // 索引6
+        ];
+        
+        // 基准日期：2025年9月17日（星期三）
+        const firstDutyDate = new Date(2025, 8, 17);
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            // 显示当前年份
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+            
+            // 显示当前日期
+            updateCurrentDateDisplay();
+            
+            // 渲染值班人员列表
+            renderPersonnelList();
+            
+            // 初始化日历，显示当前月份
+            renderCalendar(new Date());
+            
+            // 显示今天和明天的值班人员
+            displayTodayAndTomorrowDuty();
+            
+            // 事件监听
+            document.getElementById('prev-month').addEventListener('click', () => {
+                navigateMonth(-1);
+            });
+            
+            document.getElementById('next-month').addEventListener('click', () => {
+                navigateMonth(1);
+            });
+            
+            document.getElementById('today-btn').addEventListener('click', () => {
+                renderCalendar(new Date());
+                displayTodayAndTomorrowDuty();
+                updateCurrentDateDisplay();
+            });
+            
+            // 滚动时改变导航栏样式
+            window.addEventListener('scroll', () => {
+                const header = document.querySelector('header');
+                if (window.scrollY > 10) {
+                    header.classList.add('py-2');
+                    header.classList.remove('py-4');
+                } else {
+                    header.classList.add('py-4');
+                    header.classList.remove('py-2');
+                }
+            });
+        });
+        
+        // 当前显示的月份
+        let currentDisplayMonth = new Date();
+        
+        // 导航到上一个或下一个月
+        function navigateMonth(direction) {
+            currentDisplayMonth = new Date(currentDisplayMonth.getFullYear(), 
+                currentDisplayMonth.getMonth() + direction, 1);
+            renderCalendar(currentDisplayMonth);
+        }
+        
+        // 更新当前日期显示
+        function updateCurrentDateDisplay() {
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('current-date-display').textContent = 
+                new Date().toLocaleDateString('zh-CN', options);
+        }
+        
+        // 渲染值班人员列表
+        function renderPersonnelList() {
+            const container = document.getElementById('personnel-list');
+            container.innerHTML = '';
+            
+            personnel.forEach((person, index) => {
+                const badge = document.createElement('div');
+                badge.className = `flex items-center justify-center p-2 rounded-lg shadow-soft hover:shadow transition-custom`;
+                badge.innerHTML = `
+                    <span class="inline-block w-6 h-6 rounded-full bg-${person.color} text-darkText text-xs text-center leading-6 mr-2">${index + 1}</span>
+                    <span class="font-medium text-darkText">${person.name}</span>
+                `;
+                container.appendChild(badge);
+            });
+        }
+        
+        // 渲染日历
+        function renderCalendar(date) {
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            
+            // 更新月份标题
+            const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", 
+                               "七月", "八月", "九月", "十月", "十一月", "十二月"];
+            document.getElementById('current-month').textContent = `${year}年 ${monthNames[month]}`;
+            
+            const calendarGrid = document.getElementById('calendar-grid');
+            calendarGrid.innerHTML = '';
+            
+            // 获取当月第一天是星期几 (0-6, 0是星期日)
+            const firstDay = new Date(year, month, 1).getDay();
+            
+            // 获取当月的天数
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // 添加上个月的占位天数
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'p-3 border-b border-r bg-gray-50 opacity-70';
+                calendarGrid.appendChild(emptyCell);
+            }
+            
+            // 获取今天的日期（用于高亮显示）
+            const today = new Date();
+            const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+            
+            // 添加当月的天数
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateCell = document.createElement('div');
+                dateCell.className = 'p-3 border-b border-r transition-custom hover:bg-neutral';
+                
+                const currentDate = new Date(year, month, day);
+                const isToday = isCurrentMonth && today.getDate() === day;
+                const isPast = currentDate < new Date(today.setHours(0, 0, 0, 0));
+                const isMonday = currentDate.getDay() === 1; // 周一（1表示周一）
+                
+                // 获取当天的值班人员
+                const dutyPersons = getDutyPersons(currentDate);
+                
+                // 设置单元格样式 - 周一添加特殊背景
+                if (isMonday) {
+                    dateCell.classList.add('bg-gray-50');
+                }
+                if (isToday) {
+                    dateCell.classList.add('bg-primary', 'border-gray-300', 'font-medium');
+                } else if (isPast) {
+                    dateCell.classList.add('opacity-80');
+                }
+                
+                // 构建单元格内容
+                dateCell.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="${isToday ? 'text-darkText font-bold' : 'text-darkText'}">${day}${isMonday ? '<span class="text-xs ml-1 text-gray-500">(一)</span>' : ''}</span>
+                        <span class="text-xs text-gray-600">${getWeekdayName(currentDate.getDay())}</span>
+                    </div>
+                    <div class="duty-persons space-y-2 mt-1">
+                        ${dutyPersons.length > 0 ? dutyPersons.map(person => `
+                            <div class="person-badge bg-${person.color}">${person.name}</div>
+                        `).join('') : '<div class="text-gray-500 text-xs italic text-center py-3">暂无安排</div>'}
+                    </div>
+                `;
+                
+                calendarGrid.appendChild(dateCell);
+            }
+        }
+        
+        // 获取星期几的名称
+        function getWeekdayName(day) {
+            const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+            return weekdays[day];
+        }
+        
+        // 显示今天和明天的值班人员
+        function displayTodayAndTomorrowDuty() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            // 显示今天的值班人员
+            const todayPersons = getDutyPersons(today);
+            const todayContainer = document.querySelector('#today-duty .duty-persons');
+            todayContainer.innerHTML = todayPersons.length > 0 ? todayPersons.map(person => `
+                <div class="person-badge bg-${person.color}">${person.name}</div>
+            `).join('') : '<div class="text-gray-500 italic text-center py-3">暂无安排</div>';
+            
+            // 显示明天的值班人员
+            const tomorrowPersons = getDutyPersons(tomorrow);
+            const tomorrowContainer = document.querySelector('#tomorrow-duty .duty-persons');
+            tomorrowContainer.innerHTML = tomorrowPersons.length > 0 ? tomorrowPersons.map(person => `
+                <div class="person-badge bg-${person.color}">${person.name}</div>
+            `).join('') : '<div class="text-gray-500 italic text-center py-3">暂无安排</div>';
+        }
+        
+        // 根据日期获取值班人员 - 已调整为张慧杰固定在每周一值班
+        function getDutyPersons(date) {
+            // 计算与基准日期的差值（天）
+            const timeDiff = date.getTime() - firstDutyDate.getTime();
+            const dayDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+            
+            // 重新调整值班周期，确保张慧杰（索引6）固定在每周一（周期位置3）
+            // 周期索引对应关系：0=周三, 1=周四, 2=周五, 3=周六, 4=周日, 5=周一, 6=周二
+            // 特别注意：5号位置对应周一，确保张慧杰出现在这里
+            const dutyCycleIndexes = [
+                [0, 3],   // 周期0（周三）：陈琛, 赵予
+                [1, 4],   // 周期1（周四）：李义宗, 张宁勃
+                [2, 5],   // 周期2（周五）：张俊博, 杨虎
+                [3, 0],   // 周期3（周六）：赵予, 陈琛
+                [4, 1],   // 周期4（周日）：张宁勃, 李义宗
+                [6, 2],   // 周期5（周一）：张慧杰, 张俊博 ← 固定张慧杰在周一
+                [5, 6]    // 周期6（周二）：杨虎, 张慧杰
+            ];
+            
+            // 计算周期中的位置，确保为非负数
+            let cyclePos = (dayDiff % 7 + 7) % 7;
+            
+            // 对于基准日期之前的日期，返回空数组
+            if (dayDiff < 0) {
+                return [];
+            }
+            
+            // 根据索引获取对应的人员信息
+            return dutyCycleIndexes[cyclePos].map(index => personnel[index]);
+        }
+    </script>
+</body>
+</html>
