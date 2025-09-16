@@ -54,6 +54,12 @@
                 .calendar-day-mobile {
                     min-height: 80px;
                 }
+                .calendar-container {
+                    overflow-x: auto;
+                }
+                .calendar-inner {
+                    min-width: 600px;
+                }
             }
         }
     </style>
@@ -89,17 +95,6 @@
             </button>
         </div>
         
-        <!-- 值班人员列表 -->
-        <div class="mb-5 sm:mb-8 bg-white p-3 sm:p-4 rounded-xl shadow-soft">
-            <h3 class="text-base sm:text-lg font-semibold mb-3 flex items-center text-darkText">
-                <i class="fa fa-users text-primary mr-2"></i>
-                值班人员列表
-            </h3>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3" id="personnel-list">
-                <!-- 值班人员将通过JS动态生成 -->
-            </div>
-        </div>
-        
         <!-- 今日及明日值班提示 -->
         <div class="mb-5 sm:mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
             <div id="today-duty" class="bg-white p-3 sm:p-4 rounded-lg shadow-soft border-t-4 border-primary">
@@ -123,21 +118,23 @@
         </div>
         
         <!-- 日历网格 -->
-        <div class="bg-white rounded-xl shadow-soft overflow-hidden">
-            <!-- 星期标题 - 移动端简化显示 -->
-            <div class="grid grid-cols-7 border-b bg-neutral">
-                <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">日</div>
-                <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm bg-gray-100">一</div>
-                <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">二</div>
-                <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">三</div>
-                <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">四</div>
-                <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">五</div>
-                <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">六</div>
-            </div>
-            
-            <!-- 日历单元格 -->
-            <div id="calendar-grid" class="grid grid-cols-7 auto-rows-fr">
-                <!-- 日历内容将通过JS动态生成 -->
+        <div class="calendar-container bg-white rounded-xl shadow-soft overflow-hidden">
+            <div class="calendar-inner">
+                <!-- 星期标题 - 移动端简化显示 -->
+                <div class="grid grid-cols-7 border-b bg-neutral">
+                    <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">日</div>
+                    <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm bg-gray-100">一</div>
+                    <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">二</div>
+                    <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">三</div>
+                    <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">四</div>
+                    <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">五</div>
+                    <div class="p-2 sm:p-3 text-center font-medium text-gray-600 text-xs sm:text-sm">六</div>
+                </div>
+                
+                <!-- 日历单元格 -->
+                <div id="calendar-grid" class="grid grid-cols-7 auto-rows-fr">
+                    <!-- 日历内容将通过JS动态生成 -->
+                </div>
             </div>
         </div>
     </main>
@@ -151,7 +148,7 @@
     </footer>
 
     <script>
-        // 值班人员列表及对应的浅色系
+        // 值班人员列表及对应的浅色系（恢复杨虎）
         const personnel = [
             { name: "陈琛", color: "person1" },
             { name: "李义宗", color: "person2" },
@@ -172,9 +169,6 @@
             
             // 显示当前日期
             updateCurrentDateDisplay();
-            
-            // 渲染值班人员列表
-            renderPersonnelList();
             
             // 初始化日历，显示当前月份
             renderCalendar(new Date());
@@ -228,22 +222,6 @@
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
             document.getElementById('current-date-display').textContent = 
                 new Date().toLocaleDateString('zh-CN', options);
-        }
-        
-        // 渲染值班人员列表
-        function renderPersonnelList() {
-            const container = document.getElementById('personnel-list');
-            container.innerHTML = '';
-            
-            personnel.forEach((person, index) => {
-                const badge = document.createElement('div');
-                badge.className = `flex items-center justify-center p-2 rounded-lg shadow-soft hover:shadow transition-custom`;
-                badge.innerHTML = `
-                    <span class="inline-block w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-${person.color} text-darkText text-xs text-center leading-5 sm:leading-6 mr-1.5">${index + 1}</span>
-                    <span class="font-medium text-darkText text-sm">${person.name}</span>
-                `;
-                container.appendChild(badge);
-            });
         }
         
         // 渲染日历
@@ -300,10 +278,10 @@
                     dateCell.classList.add('opacity-80');
                 }
                 
-                // 构建单元格内容，移动端使用更小的字体
+                // 构建单元格内容，已删除周一的"（一）"标记
                 dateCell.innerHTML = `
                     <div class="flex justify-between items-center mb-2">
-                        <span class="${isToday ? 'text-darkText font-bold' : 'text-darkText'} text-sm">${day}${isMonday ? '<span class="text-xs ml-1 text-gray-500">(一)</span>' : ''}</span>
+                        <span class="${isToday ? 'text-darkText font-bold' : 'text-darkText'} text-sm">${day}</span>
                         <span class="text-xs text-gray-600">${getWeekdayName(currentDate.getDay()).substring(1)}</span>
                     </div>
                     <div class="duty-persons space-y-1.5 mt-1">
@@ -344,22 +322,21 @@
             `).join('') : '<div class="text-gray-500 italic text-center py-3">暂无安排</div>';
         }
         
-        // 根据日期获取值班人员 - 已调整为张慧杰固定在每周一值班
+        // 根据日期获取值班人员 - 恢复杨虎后的值班逻辑
         function getDutyPersons(date) {
             // 计算与基准日期的差值（天）
             const timeDiff = date.getTime() - firstDutyDate.getTime();
             const dayDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
             
-            // 重新调整值班周期，确保张慧杰（索引6）固定在每周一（周期位置3）
+            // 恢复杨虎后的值班周期安排
             // 周期索引对应关系：0=周三, 1=周四, 2=周五, 3=周六, 4=周日, 5=周一, 6=周二
-            // 特别注意：5号位置对应周一，确保张慧杰出现在这里
             const dutyCycleIndexes = [
                 [0, 3],   // 周期0（周三）：陈琛, 赵予
                 [1, 4],   // 周期1（周四）：李义宗, 张宁勃
                 [2, 5],   // 周期2（周五）：张俊博, 杨虎
                 [3, 0],   // 周期3（周六）：赵予, 陈琛
                 [4, 1],   // 周期4（周日）：张宁勃, 李义宗
-                [6, 2],   // 周期5（周一）：张慧杰, 张俊博 ← 固定张慧杰在周一
+                [6, 2],   // 周期5（周一）：张慧杰, 张俊博
                 [5, 6]    // 周期6（周二）：杨虎, 张慧杰
             ];
             
