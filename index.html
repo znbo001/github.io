@@ -7,8 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <!-- 引入Chart.js用于可视化 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
         tailwind.config = {
@@ -35,7 +33,7 @@
                 content-visibility: auto;
             }
             .card-shadow {
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             }
             .input-focus {
                 @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
@@ -43,74 +41,128 @@
             .transition-custom {
                 @apply transition-all duration-300 ease-in-out;
             }
+            /* 移动端优化：A4容器调整 */
             .screenshot-container {
-                @apply bg-white rounded-xl p-6 card-shadow;
-                width: 794px;
-                min-height: 1123px;
+                @apply bg-white rounded-xl p-4 card-shadow;
+                width: 100%;
+                min-height: auto;
                 margin: 0 auto;
                 box-sizing: border-box;
                 font-family: inherit;
                 color: inherit;
                 line-height: inherit;
             }
-            /* 新增：费用图表容器样式 */
-            .chart-container {
-                height: 300px;
-                position: relative;
+            /* 移动端优化：减少间距 */
+            .mobile-optimized {
+                @apply space-y-4;
+            }
+            .mobile-optimized .grid {
+                @apply gap-3;
+            }
+            .mobile-optimized .rounded-lg {
+                @apply rounded-md;
+            }
+            .mobile-optimized .p-4 {
+                @apply p-3;
+            }
+            /* 移动端表格样式优化 */
+            .cost-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+            @media (min-width: 768px) {
+                .cost-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+            /* 移动端文本大小优化 */
+            .mobile-text {
+                @apply text-sm;
+            }
+            .mobile-heading {
+                @apply text-base;
+            }
+        }
+        /* 媒体查询：移动端优化 */
+        @media (max-width: 768px) {
+            .container {
+                @apply px-3;
+            }
+            .card-shadow {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            }
+            .mobile-collapse {
+                @apply py-2;
+            }
+            .mobile-collapse .p-6 {
+                @apply p-4;
+            }
+            .mobile-collapse .space-y-5 {
+                @apply space-y-3;
+            }
+            .mobile-collapse .text-xl {
+                @apply text-lg;
+            }
+            .mobile-collapse .gap-8 {
+                @apply gap-5;
+            }
+            .mobile-collapse .gap-4 {
+                @apply gap-3;
             }
         }
     </style>
 </head>
 <body class="font-inter bg-gray-50 text-dark min-h-screen">
     <header class="bg-white shadow-sm sticky top-0 z-10">
-        <div class="container mx-auto px-4 py-5 flex justify-between items-center">
+        <div class="container mx-auto px-3 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-2">
-                <i class="fa fa-home text-primary text-2xl"></i>
-                <h1 class="text-[clamp(1.25rem,3vw,1.75rem)] font-bold text-primary">购房成本计算器</h1>
+                <i class="fa fa-home text-primary text-xl"></i>
+                <h1 class="text-lg font-bold text-primary">购房成本计算器</h1>
             </div>
-            <div class="text-sm text-gray-500 hidden md:block">
+            <div class="text-xs text-gray-500 hidden md:block">
                 轻松计算您的购房各项费用
             </div>
         </div>
     </header>
 
-    <main class="container mx-auto px-4 py-8 max-w-6xl">
-        <div class="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-8">
+    <main class="container mx-auto px-3 py-5 max-w-6xl mobile-optimized">
+        <div class="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-5 text-sm">
             <div class="flex items-start">
-                <i class="fa fa-info-circle text-primary mt-1 mr-3"></i>
-                <p class="text-sm text-gray-600">
+                <i class="fa fa-info-circle text-primary mt-0.5 mr-2"></i>
+                <p class="text-gray-600">
                     本计算器可帮助您估算购房过程中的各项费用，包括首付、贷款、税费等，结果仅供参考，实际费用以相关部门核算为准。
                 </p>
             </div>
         </div>
         
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
             <!-- 输入表单区域 -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-xl p-6 card-shadow h-full">
-                    <h2 class="text-xl font-bold mb-6 pb-3 border-b border-gray-100">
+            <div class="lg:col-span-2 mobile-collapse">
+                <div class="bg-white rounded-xl p-4 card-shadow h-full">
+                    <h2 class="mobile-heading font-bold mb-4 pb-2 border-b border-gray-100">
                         <i class="fa fa-pencil-square-o text-primary mr-2"></i>填写房屋信息
                     </h2>
                     
-                    <form id="calculator-form" class="space-y-5">
+                    <form id="calculator-form" class="space-y-4">
                         <!-- 小区名称 -->
                         <div>
                             <label for="community-name" class="block text-sm font-medium text-gray-700 mb-1">小区名称</label>
                             <input type="text" id="community-name" placeholder="例如：幸福家园" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-custom">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
                         </div>
                         
                         <!-- 面积和总价 -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                                 <label for="area" class="block text-sm font-medium text-gray-700 mb-1">房屋面积 (㎡)</label>
                                 <input type="number" id="area" min="1" step="0.01" placeholder="例如：120.5" 
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-custom">
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
                             </div>
                             <div>
                                 <label for="total-price" class="block text-sm font-medium text-gray-700 mb-1">房屋总价 (万元)</label>
                                 <input type="number" id="total-price" min="1" step="0.1" placeholder="例如：280.5" 
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-custom">
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
                             </div>
                         </div>
                         
@@ -120,7 +172,7 @@
                             <div class="flex items-center">
                                 <input type="range" id="down-payment-ratio" min="15" max="80" step="5" value="30"
                                     class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary">
-                                <span id="ratio-value" class="ml-3 min-w-[40px] text-center font-medium text-primary">30%</span>
+                                <span id="ratio-value" class="ml-3 min-w-[40px] text-center font-medium text-primary text-sm">30%</span>
                             </div>
                         </div>
                         
@@ -131,19 +183,19 @@
                                 <label class="relative">
                                     <input type="radio" name="tax-time" value="less-than-2" checked 
                                         class="peer sr-only">
-                                    <span class="block text-center px-3 py-2 border border-gray-300 rounded-lg cursor-pointer 
+                                    <span class="block text-center px-2 py-1.5 border border-gray-300 rounded-md cursor-pointer text-xs
                                         peer-checked:border-primary peer-checked:bg-primary/5 transition-custom">不满二</span>
                                 </label>
                                 <label class="relative">
                                     <input type="radio" name="tax-time" value="more-than-2" 
                                         class="peer sr-only">
-                                    <span class="block text-center px-3 py-2 border border-gray-300 rounded-lg cursor-pointer 
+                                    <span class="block text-center px-2 py-1.5 border border-gray-300 rounded-md cursor-pointer text-xs
                                         peer-checked:border-primary peer-checked:bg-primary/5 transition-custom">满二</span>
                                 </label>
                                 <label class="relative">
                                     <input type="radio" name="tax-time" value="more-than-5" 
                                         class="peer sr-only">
-                                    <span class="block text-center px-3 py-2 border border-gray-300 rounded-lg cursor-pointer 
+                                    <span class="block text-center px-2 py-1.5 border border-gray-300 rounded-md cursor-pointer text-xs
                                         peer-checked:border-primary peer-checked:bg-primary/5 transition-custom">满五唯一</span>
                                 </label>
                             </div>
@@ -153,7 +205,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">贷款方式</label>
                             <select id="loan-type" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-custom bg-white">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom bg-white text-sm">
                                 <option value="commercial">商业贷款</option>
                                 <option value="fund">公积金贷款</option>
                                 <option value="combination">组合贷款</option>
@@ -161,20 +213,20 @@
                         </div>
                         
                         <!-- 公积金相关选项 -->
-                        <div id="fund-options-container" class="hidden space-y-5">
+                        <div id="fund-options-container" class="hidden space-y-4">
                             <!-- 公积金使用次数 -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">公积金使用次数</label>
-                                <div class="flex space-x-4">
+                                <div class="flex space-x-3">
                                     <label class="flex items-center cursor-pointer">
                                         <input type="radio" name="fund-usage" value="first" checked
                                             class="w-4 h-4 accent-primary">
-                                        <span class="ml-2">第一次使用</span>
+                                        <span class="ml-2 text-sm">第一次使用</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
                                         <input type="radio" name="fund-usage" value="second"
                                             class="w-4 h-4 accent-primary">
-                                        <span class="ml-2">第二次使用</span>
+                                        <span class="ml-2 text-sm">第二次使用</span>
                                     </label>
                                 </div>
                             </div>
@@ -182,21 +234,21 @@
                             <!-- 家庭人数 -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">家庭情况</label>
-                                <div class="flex space-x-4">
-                                    <label class="flex items-center cursor-pointer">
+                                <div class="flex space-x-3 flex-wrap">
+                                    <label class="flex items-center cursor-pointer mr-3 mb-1">
                                         <input type="radio" name="family-type" value="single" checked
                                             class="w-4 h-4 accent-primary">
-                                        <span class="ml-2">单人</span>
+                                        <span class="ml-2 text-sm">单人</span>
                                     </label>
-                                    <label class="flex items-center cursor-pointer">
+                                    <label class="flex items-center cursor-pointer mr-3 mb-1">
                                         <input type="radio" name="family-type" value="couple"
                                             class="w-4 h-4 accent-primary">
-                                        <span class="ml-2">双人</span>
+                                        <span class="ml-2 text-sm">双人</span>
                                     </label>
                                     <label class="flex items-center cursor-pointer">
                                         <input type="radio" name="family-type" value="multiple-children"
                                             class="w-4 h-4 accent-primary">
-                                        <span class="ml-2">二孩及以上</span>
+                                        <span class="ml-2 text-sm">二孩及以上</span>
                                     </label>
                                 </div>
                             </div>
@@ -208,23 +260,23 @@
                                     <span id="fund-max-amount-text" class="text-xs text-gray-500 ml-2">(最高可贷: --万元)</span>
                                 </label>
                                 <input type="number" id="fund-loan-amount" min="1" step="1" placeholder="例如：50" 
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-custom">
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
                             </div>
                         </div>
                         
                         <!-- 还款方式 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">还款方式</label>
-                            <div class="flex space-x-4">
+                            <div class="flex space-x-3">
                                 <label class="flex items-center cursor-pointer">
                                     <input type="radio" name="repayment-method" value="equal-principal-interest" checked
                                         class="w-4 h-4 accent-primary">
-                                    <span class="ml-2">等额本息</span>
+                                    <span class="ml-2 text-sm">等额本息</span>
                                 </label>
                                 <label class="flex items-center cursor-pointer">
                                     <input type="radio" name="repayment-method" value="equal-principal"
                                         class="w-4 h-4 accent-primary">
-                                    <span class="ml-2">等额本金</span>
+                                    <span class="ml-2 text-sm">等额本金</span>
                                 </label>
                             </div>
                         </div>
@@ -233,7 +285,7 @@
                         <div>
                             <label for="loan-term" class="block text-sm font-medium text-gray-700 mb-1">贷款年限</label>
                             <select id="loan-term" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-custom bg-white">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom bg-white text-sm">
                                     <!-- 选项将通过JavaScript动态生成1-40年 -->
                             </select>
                         </div>
@@ -242,7 +294,7 @@
                         <div>
                             <label for="house-count" class="block text-sm font-medium text-gray-700 mb-1">住房套数（影响契税）</label>
                             <select id="house-count" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus transition-custom bg-white">
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom bg-white text-sm">
                                 <option value="1" selected>首套</option>
                                 <option value="2">二套</option>
                                 <option value="3">三套及以上</option>
@@ -252,29 +304,29 @@
                         <!-- 土地出让金 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">是否有土地出让金</label>
-                            <div class="flex space-x-4">
+                            <div class="flex space-x-3">
                                 <label class="flex items-center cursor-pointer">
                                     <input type="radio" name="land-fee" value="yes" 
                                         class="w-4 h-4 accent-primary">
-                                    <span class="ml-2">是</span>
+                                    <span class="ml-2 text-sm">是</span>
                                 </label>
                                 <label class="flex items-center cursor-pointer">
                                     <input type="radio" name="land-fee" value="no" checked
                                         class="w-4 h-4 accent-primary">
-                                    <span class="ml-2">否</span>
+                                    <span class="ml-2 text-sm">否</span>
                                 </label>
                             </div>
                         </div>
                         
                         <!-- 计算按钮 -->
                         <button type="button" id="calculate-btn" 
-                            class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg 
-                                transition-custom flex items-center justify-center">
+                            class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 px-4 rounded-md 
+                                transition-custom flex items-center justify-center text-sm">
                             <i class="fa fa-calculator mr-2"></i> 计算购房成本
                         </button>
 
-                        <!-- 新增：实时计算开关 -->
-                        <div class="flex items-center">
+                        <!-- 实时计算开关 -->
+                        <div class="flex items-center pt-2">
                             <input type="checkbox" id="realtime-calculation" class="w-4 h-4 accent-primary">
                             <label for="realtime-calculation" class="ml-2 text-sm text-gray-600">启用实时计算</label>
                         </div>
@@ -285,88 +337,78 @@
             <!-- 结果展示区域 -->
             <div class="lg:col-span-3">
                 <!-- 截图容器 -->
-                <div id="screenshot-target" class="screenshot-container mb-6">
-                    <h2 class="text-xl font-bold mb-6 pb-3 border-b border-gray-100">
+                <div id="screenshot-target" class="screenshot-container mb-5">
+                    <h2 class="mobile-heading font-bold mb-4 pb-2 border-b border-gray-100">
                         <i class="fa fa-bar-chart text-primary mr-2"></i>购房成本计算结果
                     </h2>
                     
                     <div id="result-container" class="opacity-50">
                         <!-- 基本信息 -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div class="bg-neutral rounded-lg p-4">
-                                <h3 class="text-sm text-gray-500 mb-1">小区名称</h3>
-                                <p id="result-community" class="font-medium">-</p>
+                        <div class="cost-grid mb-5">
+                            <div class="bg-neutral rounded-md p-3">
+                                <h3 class="text-xs text-gray-500 mb-1">小区名称</h3>
+                                <p id="result-community" class="font-medium text-sm">-</p>
                             </div>
-                            <div class="bg-neutral rounded-lg p-4">
-                                <h3 class="text-sm text-gray-500 mb-1">房屋面积</h3>
-                                <p id="result-area" class="font-medium">-</p>
+                            <div class="bg-neutral rounded-md p-3">
+                                <h3 class="text-xs text-gray-500 mb-1">房屋面积</h3>
+                                <p id="result-area" class="font-medium text-sm">-</p>
                             </div>
-                            <div class="bg-neutral rounded-lg p-4">
-                                <h3 class="text-sm text-gray-500 mb-1">房屋总价</h3>
-                                <p id="result-total-price" class="font-medium">-</p>
+                            <div class="bg-neutral rounded-md p-3">
+                                <h3 class="text-xs text-gray-500 mb-1">房屋总价</h3>
+                                <p id="result-total-price" class="font-medium text-sm">-</p>
                             </div>
-                            <div class="bg-neutral rounded-lg p-4">
-                                <h3 class="text-sm text-gray-500 mb-1">单价</h3>
-                                <p id="result-unit-price" class="font-medium">-</p>
-                            </div>
-                        </div>
-                        
-                        <!-- 新增：费用构成饼图 -->
-                        <div class="mb-6 hidden" id="cost-chart-container">
-                            <h3 class="text-base font-semibold mb-4 text-gray-800">
-                                <i class="fa fa-pie-chart text-primary mr-1"></i> 费用构成
-                            </h3>
-                            <div class="chart-container">
-                                <canvas id="cost-chart"></canvas>
+                            <div class="bg-neutral rounded-md p-3">
+                                <h3 class="text-xs text-gray-500 mb-1">单价</h3>
+                                <p id="result-unit-price" class="font-medium text-sm">-</p>
                             </div>
                         </div>
                         
                         <!-- 首付和贷款信息 -->
-                        <div class="mb-6">
-                            <h3 class="text-base font-semibold mb-4 text-gray-800">
+                        <div class="mb-5">
+                            <h3 class="text-sm font-semibold mb-3 text-gray-800">
                                 <i class="fa fa-money text-primary mr-1"></i> 首付与贷款概况
                             </h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">计划首付比例</h4>
-                                    <p id="result-planned-down-ratio" class="font-medium">-</p>
+                            <div class="cost-grid">
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">计划首付比例</h4>
+                                    <p id="result-planned-down-ratio" class="font-medium text-sm">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">实际首付比例</h4>
-                                    <p id="result-actual-down-ratio" class="font-medium text-accent">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">实际首付比例</h4>
+                                    <p id="result-actual-down-ratio" class="font-medium text-sm text-accent">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">首付金额</h4>
-                                    <p id="result-down-payment" class="font-medium text-accent">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">首付金额</h4>
+                                    <p id="result-down-payment" class="font-medium text-sm text-accent">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">贷款总金额</h4>
-                                    <p id="result-loan-amount" class="font-medium">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">贷款总金额</h4>
+                                    <p id="result-loan-amount" class="font-medium text-sm">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">贷款方式</h4>
-                                    <p id="result-loan-type" class="font-medium">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">贷款方式</h4>
+                                    <p id="result-loan-type" class="font-medium text-sm">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">贷款年限</h4>
-                                    <p id="result-loan-term" class="font-medium">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">贷款年限</h4>
+                                    <p id="result-loan-term" class="font-medium text-sm">-</p>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- 贷款详情 -->
-                        <div class="mb-6">
-                            <h3 class="text-base font-semibold mb-4 text-gray-800">
+                        <div class="mb-5">
+                            <h3 class="text-sm font-semibold mb-3 text-gray-800">
                                 <i class="fa fa-university text-primary mr-1"></i> 贷款详情
                             </h3>
                             
                             <!-- 公积金贷款信息 -->
-                            <div id="fund-loan-details" class="hidden mb-4">
-                                <div class="bg-green-50 rounded-lg p-4 border border-green-100">
-                                    <h4 class="text-sm text-green-700 mb-2 flex items-center">
+                            <div id="fund-loan-details" class="hidden mb-3">
+                                <div class="bg-green-50 rounded-md p-3 border border-green-100">
+                                    <h4 class="text-xs text-green-700 mb-2 flex items-center">
                                         <i class="fa fa-money mr-1"></i> 公积金贷款部分
                                     </h4>
-                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                                    <div class="grid grid-cols-2 gap-2 text-xs">
                                         <div>
                                             <span class="text-gray-500">贷款金额：</span>
                                             <span id="result-fund-amount" class="font-medium">-</span>
@@ -388,12 +430,12 @@
                             </div>
                             
                             <!-- 商业贷款信息 -->
-                            <div id="commercial-loan-details" class="hidden mb-4">
-                                <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                                    <h4 class="text-sm text-blue-700 mb-2 flex items-center">
+                            <div id="commercial-loan-details" class="hidden mb-3">
+                                <div class="bg-blue-50 rounded-md p-3 border border-blue-100">
+                                    <h4 class="text-xs text-blue-700 mb-2 flex items-center">
                                         <i class="fa fa-building-o mr-1"></i> 商业贷款部分
                                     </h4>
-                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                                    <div class="grid grid-cols-2 gap-2 text-xs">
                                         <div>
                                             <span class="text-gray-500">贷款金额：</span>
                                             <span id="result-commercial-amount" class="font-medium">-</span>
@@ -411,138 +453,138 @@
                             </div>
                             
                             <!-- 总贷款利率和月供 -->
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">还款方式</h4>
-                                    <p id="result-repayment-method" class="font-medium">-</p>
+                            <div class="cost-grid">
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">还款方式</h4>
+                                    <p id="result-repayment-method" class="font-medium text-sm">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">综合贷款利率</h4>
-                                    <p id="result-interest-rate" class="font-medium">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">综合贷款利率</h4>
+                                    <p id="result-interest-rate" class="font-medium text-sm">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">月供总金额</h4>
-                                    <p id="result-monthly-payment" class="font-medium text-lg">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">月供总金额</h4>
+                                    <p id="result-monthly-payment" class="font-medium text-sm">-</p>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- 税费信息 -->
-                        <div class="mb-6">
-                            <h3 class="text-base font-semibold mb-4 text-gray-800">
+                        <div class="mb-5">
+                            <h3 class="text-sm font-semibold mb-3 text-gray-800">
                                 <i class="fa fa-percent text-primary mr-1"></i> 税费及其他费用
                             </h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">契税</h4>
-                                    <p id="result-deed-tax" class="font-medium">-</p>
+                            <div class="cost-grid">
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">契税</h4>
+                                    <p id="result-deed-tax" class="font-medium text-sm">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">个人所得税</h4>
-                                    <p id="result-income-tax" class="font-medium">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">个人所得税</h4>
+                                    <p id="result-income-tax" class="font-medium text-sm">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">增值税</h4>
-                                    <p id="result-vat" class="font-medium">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">增值税</h4>
+                                    <p id="result-vat" class="font-medium text-sm">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">土地出让金</h4>
-                                    <p id="result-land-fee" class="font-medium">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">土地出让金</h4>
+                                    <p id="result-land-fee" class="font-medium text-sm">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">居间服务费</h4>
-                                    <p id="result-agent-fee" class="font-medium">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">居间服务费</h4>
+                                    <p id="result-agent-fee" class="font-medium text-sm">-</p>
                                 </div>
-                                <div class="bg-neutral rounded-lg p-4">
-                                    <h4 class="text-sm text-gray-500 mb-1">贷款服务费</h4>
-                                    <p id="result-loan-fee" class="font-medium">-</p>
+                                <div class="bg-neutral rounded-md p-3">
+                                    <h4 class="text-xs text-gray-500 mb-1">贷款服务费</h4>
+                                    <p id="result-loan-fee" class="font-medium text-sm">-</p>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- 总成本 -->
-                        <div class="border-2 border-accent/30 bg-accent/5 rounded-lg p-5">
-                            <h3 class="text-base font-semibold mb-3 text-gray-800">
+                        <div class="border-2 border-accent/30 bg-accent/5 rounded-md p-4">
+                            <h3 class="text-sm font-semibold mb-2 text-gray-800">
                                 <i class="fa fa-calculator text-accent mr-1"></i> 前期购房总成本
                             </h3>
-                            <p id="result-total-cost" class="text-2xl font-bold text-accent">-</p>
-                            <p class="text-sm text-gray-500 mt-2">
+                            <p id="result-total-cost" class="text-lg font-bold text-accent">-</p>
+                            <p class="text-xs text-gray-500 mt-2">
                                 注：前期购房总成本 = 首付 + 契税 + 个人所得税 + 增值税及附加 + 土地出让金 + 居间服务费 + 贷款服务费
                             </p>
                         </div>
 
                         <!-- 水印 -->
-                        <div class="mt-6 text-center text-xs text-gray-400">
+                        <div class="mt-5 text-center text-xs text-gray-400">
                             购房成本计算器生成 | 仅供参考
                         </div>
                     </div>
                 </div>
 
                 <!-- 生成图片功能区 -->
-                <div class="bg-white rounded-xl p-6 card-shadow mb-8">
-                    <h3 class="text-lg font-semibold mb-4 flex items-center text-primary">
+                <div class="bg-white rounded-xl p-4 card-shadow mb-5">
+                    <h3 class="text-sm font-semibold mb-3 flex items-center text-primary">
                         <i class="fa fa-image mr-2"></i> 分享与保存（支持微信/企业微信）
                     </h3>
                     
                     <!-- 功能按钮 -->
-                    <div class="flex flex-wrap gap-4 mb-6">
+                    <div class="flex flex-wrap gap-3 mb-4">
                         <button type="button" id="generate-image-btn" 
-                            class="bg-secondary hover:bg-secondary/90 text-white font-medium py-2 px-6 rounded-lg 
-                                transition-custom flex items-center">
-                            <i class="fa fa-camera mr-2"></i> 生成A4结果图片
+                            class="bg-secondary hover:bg-secondary/90 text-white font-medium py-2 px-4 rounded-md 
+                                transition-custom flex items-center text-sm">
+                            <i class="fa fa-camera mr-2"></i> 生成结果图片
                         </button>
                         <button type="button" id="download-image-btn" disabled
-                            class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg 
-                                transition-custom flex items-center opacity-50 cursor-not-allowed">
-                            <i class="fa fa-download mr-2"></i> 下载图片（保存后可发聊天）
+                            class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-md 
+                                transition-custom flex items-center opacity-50 cursor-not-allowed text-sm">
+                            <i class="fa fa-download mr-2"></i> 下载图片
                         </button>
                         <button type="button" id="share-image-btn" disabled
-                            class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-6 rounded-lg 
-                                transition-custom flex items-center opacity-50 cursor-not-allowed">
-                            <i class="fa fa-share-alt mr-2"></i> 复制链接（粘贴到聊天）
+                            class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md 
+                                transition-custom flex items-center opacity-50 cursor-not-allowed text-sm">
+                            <i class="fa fa-share-alt mr-2"></i> 复制链接
                         </button>
                     </div>
                     
                     <!-- 图片预览区 -->
                     <div id="image-preview-container" class="hidden">
-                        <h4 class="text-sm font-medium text-gray-700 mb-3">A4图片预览（点击可放大）</h4>
-                        <div class="border border-gray-200 rounded-lg p-2 bg-gray-50 flex justify-center">
-                            <img id="image-preview" src="" alt="购房成本计算结果图片（A4）" 
+                        <h4 class="text-xs font-medium text-gray-700 mb-2">图片预览（点击可放大）</h4>
+                        <div class="border border-gray-200 rounded-md p-2 bg-gray-50 flex justify-center">
+                            <img id="image-preview" src="" alt="购房成本计算结果图片" 
                                 class="max-w-full h-auto rounded cursor-pointer transition-custom hover:shadow-lg">
                         </div>
-                        <p class="text-xs text-gray-500 mt-3 text-center">
-                            提示：1. 下载图片后，可直接在微信/企业微信聊天窗口粘贴发送；2. 复制链接后，粘贴到聊天窗口打开即可分享
+                        <p class="text-xs text-gray-500 mt-2 text-center">
+                            提示：下载图片后，可直接在微信/企业微信聊天窗口发送
                         </p>
                     </div>
                     
                     <!-- 加载状态 -->
-                    <div id="loading-container" class="hidden text-center py-4">
-                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
-                        <p class="text-sm text-gray-600">正在生成A4图片，请稍候...</p>
+                    <div id="loading-container" class="hidden text-center py-3">
+                        <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-primary mb-1"></div>
+                        <p class="text-xs text-gray-600">正在生成图片，请稍候...</p>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <footer class="bg-white border-t border-gray-200 mt-12">
-        <div class="container mx-auto px-4 py-6 text-center text-sm text-gray-500">
+    <footer class="bg-white border-t border-gray-200 mt-8">
+        <div class="container mx-auto px-3 py-4 text-center text-xs text-gray-500">
             <p>© 2024 购房成本计算器 | 本工具仅供参考，实际费用以相关部门核算为准</p>
         </div>
     </footer>
 
     <!-- 通知提示框 -->
-    <div id="toast" class="fixed bottom-6 right-6 bg-dark text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-custom flex items-center">
+    <div id="toast" class="fixed bottom-4 right-4 bg-dark text-white px-4 py-2 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-custom flex items-center text-sm">
         <i class="fa fa-info-circle mr-2"></i>
         <span id="toast-message"></span>
     </div>
 
     <!-- 图片放大弹窗 -->
     <div id="image-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
-        <button id="close-modal-btn" class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300 transition-custom">
+        <button id="close-modal-btn" class="absolute top-3 right-3 text-white text-xl hover:text-gray-300 transition-custom">
             <i class="fa fa-times"></i>
         </button>
-        <img id="modal-image" src="" alt="放大的A4计算结果图片" class="max-w-full max-h-full object-contain">
+        <img id="modal-image" src="" alt="放大的计算结果图片" class="max-w-full max-h-full object-contain">
     </div>
 
     <script>
@@ -673,67 +715,6 @@
 
         function tenThousandToYuan(amount) {
             return amount * 10000;
-        }
-
-        // 费用饼图
-        let costChart = null;
-        
-        function renderCostChart(costData) {
-            const ctx = document.getElementById('cost-chart').getContext('2d');
-            
-            // 如果已有图表，先销毁
-            if (costChart) {
-                costChart.destroy();
-            }
-            
-            costChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: costData.labels,
-                    datasets: [{
-                        data: costData.values,
-                        backgroundColor: [
-                            '#36CFC9', // 首付
-                            '#165DFF', // 契税
-                            '#FF7D00', // 个人所得税
-                            '#FFC53D', // 增值税
-                            '#9FDB1D', // 土地出让金
-                            '#F759AB', // 居间服务费
-                            '#722ED1'  // 贷款服务费
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                boxWidth: 12,
-                                font: {
-                                    size: 11
-                                }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const percentage = context.dataset.data[context.dataIndex] / 
-                                        context.dataset.data.reduce((a, b) => a + b, 0) * 100;
-                                    return `${label}: ${formatCurrency(value)} (${percentage.toFixed(1)}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            
-            // 显示图表容器
-            document.getElementById('cost-chart-container').classList.remove('hidden');
         }
 
         // 计算逻辑
@@ -949,25 +930,11 @@
             document.getElementById('result-loan-fee').textContent = formatCurrency(loanServiceFee);
             document.getElementById('result-total-cost').textContent = formatCurrency(Math.round(totalCost));
 
-            // 渲染费用饼图
-            renderCostChart({
-                labels: ['首付', '契税', '个人所得税', '增值税', '土地出让金', '居间服务费', '贷款服务费'],
-                values: [
-                    Math.round(actualDownPaymentYuan),
-                    Math.round(deedTax),
-                    Math.round(incomeTax),
-                    Math.round(vat),
-                    Math.round(landTransferFee),
-                    Math.round(agentFee),
-                    Math.round(loanServiceFee)
-                ]
-            });
-
             if (window.innerWidth < 1024) {
                 document.getElementById('screenshot-target').scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
             
-            showToast('计算完成，可生成A4图片用于微信/企业微信分享');
+            showToast('计算完成，可生成图片用于微信/企业微信分享');
         });
 
         // 生成图片功能
@@ -983,11 +950,11 @@
         const modalImage = document.getElementById('modal-image');
         const closeModalBtn = document.getElementById('close-modal-btn');
 
-        // 生成A4图片
+        // 生成图片
         generateBtn.addEventListener('click', async function() {
             const resultContainer = document.getElementById('result-container');
             if (resultContainer.classList.contains('opacity-50')) {
-                showToast('请先计算购房成本，再生成A4图片');
+                showToast('请先计算购房成本，再生成图片');
                 return;
             }
 
@@ -997,22 +964,24 @@
             imagePreviewContainer.classList.add('hidden');
 
             try {
-                // 临时隐藏图表（html2canvas对Chart.js支持有限）
-                const chartContainer = document.getElementById('cost-chart-container');
-                const originalDisplay = chartContainer.style.display;
-                chartContainer.style.display = 'none';
+                // 临时保存原始样式
+                const originalWidth = screenshotTarget.style.width;
+                const originalPadding = screenshotTarget.style.padding;
+                
+                // 设置为A4尺寸用于生成图片
+                screenshotTarget.style.width = '794px';
+                screenshotTarget.style.padding = '24px';
                 
                 const canvas = await html2canvas(screenshotTarget, {
                     scale: 2,
                     useCORS: true,
                     logging: false,
-                    backgroundColor: '#ffffff',
-                    windowWidth: screenshotTarget.offsetWidth,
-                    windowHeight: screenshotTarget.offsetHeight
+                    backgroundColor: '#ffffff'
                 });
 
-                // 恢复图表显示
-                chartContainer.style.display = originalDisplay;
+                // 恢复原始样式
+                screenshotTarget.style.width = originalWidth;
+                screenshotTarget.style.padding = originalPadding;
 
                 generatedImageUrl = canvas.toDataURL('image/png', 1.0);
 
@@ -1026,9 +995,9 @@
                 downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 shareBtn.classList.remove('opacity-50', 'cursor-not-allowed');
 
-                showToast('A4图片生成成功，可下载后发微信/企业微信');
+                showToast('图片生成成功，可下载后发微信/企业微信');
             } catch (error) {
-                console.error('生成A4图片失败：', error);
+                console.error('生成图片失败：', error);
                 loadingContainer.classList.add('hidden');
                 showToast('图片生成失败，请重试');
             } finally {
@@ -1040,7 +1009,7 @@
         // 下载图片
         downloadBtn.addEventListener('click', function() {
             if (!generatedImageUrl) {
-                showToast('请先生成A4图片');
+                showToast('请先生成图片');
                 return;
             }
 
@@ -1048,45 +1017,28 @@
             link.href = generatedImageUrl;
             const communityName = document.getElementById('result-community').textContent || '未知小区';
             const date = new Date().toLocaleDateString().replace(/\//g, '-');
-            link.download = `购房成本_${communityName}_${date}_A4.png`;
+            link.download = `购房成本_${communityName}_${date}.png`;
             
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            showToast('A4图片已下载，可在微信/企业微信聊天窗口粘贴发送');
+            showToast('图片已下载，可在微信/企业微信聊天窗口发送');
         });
 
         // 分享功能
         shareBtn.addEventListener('click', function() {
             if (!generatedImageUrl) {
-                showToast('请先生成A4图片');
+                showToast('请先生成图片');
                 return;
             }
 
             navigator.clipboard.writeText(generatedImageUrl).then(() => {
-                showToast('A4图片链接已复制，粘贴到微信/企业微信聊天窗口即可打开分享');
+                showToast('图片链接已复制，粘贴到微信/企业微信聊天窗口即可打开分享');
             }).catch(err => {
                 console.error('复制失败：', err);
                 showToast('复制失败，建议下载图片后直接发送到聊天窗口');
             });
-
-            if (navigator.share && generatedImageUrl) {
-                fetch(generatedImageUrl)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        const file = new File([blob], `购房成本_${document.getElementById('result-community').textContent || '未知小区'}_A4.png`, { type: 'image/png' });
-                        navigator.share({
-                            title: '购房成本计算结果（A4）',
-                            text: '购房成本计算结果，可直接保存或打印',
-                            files: [file]
-                        }).then(() => {
-                            showToast('已唤起分享，可选择微信/企业微信发送');
-                        }).catch(err => {
-                            console.log('原生分享未支持，建议手动下载发送：', err);
-                        });
-                    });
-            }
         });
 
         // 图片预览放大
