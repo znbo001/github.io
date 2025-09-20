@@ -41,6 +41,7 @@
             .transition-custom {
                 @apply transition-all duration-300 ease-in-out;
             }
+            /* 移动端优化：A4容器调整 */
             .screenshot-container {
                 @apply bg-white rounded-xl p-4 card-shadow;
                 width: 100%;
@@ -51,6 +52,7 @@
                 color: inherit;
                 line-height: inherit;
             }
+            /* 移动端优化：减少间距 */
             .mobile-optimized {
                 @apply space-y-4;
             }
@@ -63,6 +65,7 @@
             .mobile-optimized .p-4 {
                 @apply p-3;
             }
+            /* 移动端表格样式优化 */
             .cost-grid {
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
@@ -73,19 +76,15 @@
                     grid-template-columns: repeat(3, 1fr);
                 }
             }
+            /* 移动端文本大小优化 */
             .mobile-text {
                 @apply text-sm;
             }
             .mobile-heading {
                 @apply text-base;
             }
-            .input-error {
-                @apply border-red-500 focus:border-red-500 focus:ring-red-200;
-            }
-            .error-message {
-                @apply text-red-500 text-xs mt-1 hidden;
-            }
         }
+        /* 媒体查询：移动端优化 */
         @media (max-width: 768px) {
             .container {
                 @apply px-3;
@@ -159,13 +158,11 @@
                                 <label for="area" class="block text-sm font-medium text-gray-700 mb-1">房屋面积 (㎡)</label>
                                 <input type="number" id="area" min="1" step="0.01" placeholder="例如：120.5" 
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
-                                <p class="error-message" id="area-error">请输入有效的房屋面积</p>
                             </div>
                             <div>
                                 <label for="total-price" class="block text-sm font-medium text-gray-700 mb-1">房屋总价 (万元)</label>
                                 <input type="number" id="total-price" min="1" step="0.1" placeholder="例如：280.5" 
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
-                                <p class="error-message" id="price-error">请输入有效的房屋总价</p>
                             </div>
                         </div>
                         
@@ -264,7 +261,6 @@
                                 </label>
                                 <input type="number" id="fund-loan-amount" min="1" step="1" placeholder="例如：50" 
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
-                                <p class="error-message" id="fund-amount-error">请输入有效的贷款金额</p>
                             </div>
                         </div>
                         
@@ -592,92 +588,22 @@
     </div>
 
     <script>
-        // 全局变量
-        let calculationTimer = null;
-        const COMMERCIAL_RATES = {1: 4.3, 5: 4.85}; // 商业贷款利率(%)，1-5年/5年以上
-        const FUND_RATES = {1: 2.6, 5: 3.1}; // 公积金贷款利率(%)，1-5年/5年以上
-        
-        // DOM元素
-        const elements = {
-            // 表单元素
-            form: document.getElementById('calculator-form'),
-            area: document.getElementById('area'),
-            totalPrice: document.getElementById('total-price'),
-            downPaymentRatio: document.getElementById('down-payment-ratio'),
-            ratioValue: document.getElementById('ratio-value'),
-            loanType: document.getElementById('loan-type'),
-            fundOptionsContainer: document.getElementById('fund-options-container'),
-            fundLoanAmount: document.getElementById('fund-loan-amount'),
-            fundMaxAmountText: document.getElementById('fund-max-amount-text'),
-            loanTerm: document.getElementById('loan-term'),
-            houseCount: document.getElementById('house-count'),
-            landFee: document.querySelector('input[name="land-fee"]:checked'),
-            repaymentMethod: document.querySelector('input[name="repayment-method"]:checked'),
-            realtimeCalculation: document.getElementById('realtime-calculation'),
-            calculateBtn: document.getElementById('calculate-btn'),
-            
-            // 结果元素
-            resultContainer: document.getElementById('result-container'),
-            resultCommunity: document.getElementById('result-community'),
-            resultArea: document.getElementById('result-area'),
-            resultTotalPrice: document.getElementById('result-total-price'),
-            resultUnitPrice: document.getElementById('result-unit-price'),
-            resultPlannedDownRatio: document.getElementById('result-planned-down-ratio'),
-            resultActualDownRatio: document.getElementById('result-actual-down-ratio'),
-            resultDownPayment: document.getElementById('result-down-payment'),
-            resultLoanAmount: document.getElementById('result-loan-amount'),
-            resultLoanType: document.getElementById('result-loan-type'),
-            resultLoanTerm: document.getElementById('result-loan-term'),
-            fundLoanDetails: document.getElementById('fund-loan-details'),
-            resultFundAmount: document.getElementById('result-fund-amount'),
-            resultFundRate: document.getElementById('result-fund-rate'),
-            resultFundMaxAmount: document.getElementById('result-fund-max-amount'),
-            resultFundMonthly: document.getElementById('result-fund-monthly'),
-            commercialLoanDetails: document.getElementById('commercial-loan-details'),
-            resultCommercialAmount: document.getElementById('result-commercial-amount'),
-            resultCommercialRate: document.getElementById('result-commercial-rate'),
-            resultCommercialMonthly: document.getElementById('result-commercial-monthly'),
-            resultRepaymentMethod: document.getElementById('result-repayment-method'),
-            resultInterestRate: document.getElementById('result-interest-rate'),
-            resultMonthlyPayment: document.getElementById('result-monthly-payment'),
-            resultDeedTax: document.getElementById('result-deed-tax'),
-            resultIncomeTax: document.getElementById('result-income-tax'),
-            resultVat: document.getElementById('result-vat'),
-            resultLandFee: document.getElementById('result-land-fee'),
-            resultAgentFee: document.getElementById('result-agent-fee'),
-            resultLoanFee: document.getElementById('result-loan-fee'),
-            resultTotalCost: document.getElementById('result-total-cost'),
-            
-            // 图片功能元素
-            generateImageBtn: document.getElementById('generate-image-btn'),
-            downloadImageBtn: document.getElementById('download-image-btn'),
-            shareImageBtn: document.getElementById('share-image-btn'),
-            imagePreviewContainer: document.getElementById('image-preview-container'),
-            imagePreview: document.getElementById('image-preview'),
-            loadingContainer: document.getElementById('loading-container'),
-            imageModal: document.getElementById('image-modal'),
-            modalImage: document.getElementById('modal-image'),
-            closeModalBtn: document.getElementById('close-modal-btn'),
-            
-            // 提示元素
-            toast: document.getElementById('toast'),
-            toastMessage: document.getElementById('toast-message'),
-            areaError: document.getElementById('area-error'),
-            priceError: document.getElementById('price-error'),
-            fundAmountError: document.getElementById('fund-amount-error')
-        };
-
         // 初始化贷款年限选项
-        function initLoanTerms() {
-            for (let i = 1; i <= 40; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = `${i}年`;
-                if (i === 20) option.selected = true;
-                elements.loanTerm.appendChild(option);
-            }
+        const loanTermSelect = document.getElementById('loan-term');
+        for (let i = 1; i <= 40; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = `${i}年`;
+            if (i === 20) option.selected = true;
+            loanTermSelect.appendChild(option);
         }
 
+        // 贷款类型变更逻辑
+        const loanTypeSelect = document.getElementById('loan-type');
+        const fundOptionsContainer = document.getElementById('fund-options-container');
+        const fundLoanAmountInput = document.getElementById('fund-loan-amount');
+        const fundMaxAmountText = document.getElementById('fund-max-amount-text');
+        
         // 获取公积金贷款最高额度
         function getMaxFundLoanAmount(familyType) {
             if (familyType === 'couple') return 100;
@@ -689,494 +615,485 @@
         function updateFundMaxAmount() {
             const familyType = document.querySelector('input[name="family-type"]:checked')?.value || 'single';
             const maxAmount = getMaxFundLoanAmount(familyType);
-            elements.fundMaxAmountText.textContent = `(最高可贷: ${maxAmount}万元)`;
+            fundMaxAmountText.textContent = `(最高可贷: ${maxAmount}万元)`;
             
-            if (elements.fundLoanAmount.value) {
-                const currentValue = parseFloat(elements.fundLoanAmount.value);
+            if (fundLoanAmountInput.value) {
+                const currentValue = parseFloat(fundLoanAmountInput.value);
                 if (currentValue > maxAmount) {
-                    elements.fundLoanAmount.value = maxAmount;
+                    fundLoanAmountInput.value = maxAmount;
                     showToast(`公积金贷款金额已调整为最高可贷额度${maxAmount}万元`);
                 }
             }
         }
         
+        // 初始化家庭类型变更事件
+        document.querySelectorAll('input[name="family-type"]').forEach(radio => {
+            radio.addEventListener('change', updateFundMaxAmount);
+        });
+        
         // 更新贷款选项显示
         function updateLoanOptions() {
-            const loanType = elements.loanType.value;
-            elements.fundOptionsContainer.classList.add('hidden');
+            const loanType = loanTypeSelect.value;
+            fundOptionsContainer.classList.add('hidden');
             
             if (loanType === 'fund' || loanType === 'combination') {
-                elements.fundOptionsContainer.classList.remove('hidden');
+                fundOptionsContainer.classList.remove('hidden');
                 updateFundMaxAmount();
             }
             
-            // 如果启用了实时计算，触发计算
-            if (elements.realtimeCalculation.checked) {
-                triggerCalculation();
+            if (loanType !== 'fund' && loanType !== 'combination') {
+                fundLoanAmountInput.value = '';
             }
         }
+        loanTypeSelect.addEventListener('change', updateLoanOptions);
+        updateLoanOptions(); // 页面加载时初始化
 
-        // 显示提示信息
-        function showToast(message, duration = 3000) {
-            elements.toastMessage.textContent = message;
-            elements.toast.classList.remove('translate-y-20', 'opacity-0');
+        // 实时计算功能
+        const realtimeCheckbox = document.getElementById('realtime-calculation');
+        let realtimeTimeout = null;
+        
+        // 添加输入监听器
+        function setupRealtimeCalculation() {
+            const inputsToWatch = [
+                'community-name', 'area', 'total-price', 'down-payment-ratio',
+                'fund-loan-amount', 'loan-term'
+            ];
+            
+            inputsToWatch.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', function() {
+                        if (realtimeCheckbox.checked) {
+                            // 防抖处理，避免频繁计算
+                            clearTimeout(realtimeTimeout);
+                            realtimeTimeout = setTimeout(() => {
+                                if (validateInputs()) {
+                                    document.getElementById('calculate-btn').click();
+                                }
+                            }, 800);
+                        }
+                    });
+                }
+            });
+            
+            // 监听单选按钮和下拉菜单
+            document.querySelectorAll('input[type="radio"], select').forEach(element => {
+                element.addEventListener('change', function() {
+                    if (realtimeCheckbox.checked && validateInputs()) {
+                        document.getElementById('calculate-btn').click();
+                    }
+                });
+            });
+        }
+        
+        // 输入验证
+        function validateInputs() {
+            const area = parseFloat(document.getElementById('area').value);
+            const totalPrice = parseFloat(document.getElementById('total-price').value);
+            
+            return !isNaN(area) && area > 0 && !isNaN(totalPrice) && totalPrice > 0;
+        }
+
+        // 基础工具函数
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
             
             setTimeout(() => {
-                elements.toast.classList.add('translate-y-20', 'opacity-0');
-            }, duration);
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
         }
 
-        // 验证输入
-        function validateInputs() {
-            let isValid = true;
-            const area = parseFloat(elements.area.value);
-            const totalPrice = parseFloat(elements.totalPrice.value);
-            
-            // 验证房屋面积
-            if (isNaN(area) || area <= 0) {
-                elements.area.classList.add('input-error');
-                elements.areaError.classList.remove('hidden');
-                isValid = false;
-            } else {
-                elements.area.classList.remove('input-error');
-                elements.areaError.classList.add('hidden');
-            }
-            
-            // 验证房屋总价
-            if (isNaN(totalPrice) || totalPrice <= 0) {
-                elements.totalPrice.classList.add('input-error');
-                elements.priceError.classList.remove('hidden');
-                isValid = false;
-            } else {
-                elements.totalPrice.classList.remove('input-error');
-                elements.priceError.classList.add('hidden');
-            }
-            
-            // 验证公积金贷款金额（如果需要）
-            const loanType = elements.loanType.value;
-            if (loanType === 'fund' || loanType === 'combination') {
-                const fundAmount = parseFloat(elements.fundLoanAmount.value);
-                const familyType = document.querySelector('input[name="family-type"]:checked')?.value || 'single';
-                const maxFundAmount = getMaxFundLoanAmount(familyType);
-                
-                if (isNaN(fundAmount) || fundAmount <= 0 || fundAmount > maxFundAmount) {
-                    elements.fundLoanAmount.classList.add('input-error');
-                    elements.fundAmountError.classList.remove('hidden');
-                    isValid = false;
-                } else {
-                    elements.fundLoanAmount.classList.remove('input-error');
-                    elements.fundAmountError.classList.add('hidden');
-                }
-            }
-            
-            return isValid;
+        function formatCurrency(amount) {
+            if (amount === null || isNaN(amount)) return '-';
+            return '¥' + amount.toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+        }
+
+        function tenThousandToYuan(amount) {
+            return amount * 10000;
+        }
+
+        // 计算逻辑
+        function calculateEqualPrincipalInterest(principal, rate, years) {
+            const monthlyRate = rate / 100 / 12;
+            const months = years * 12;
+            return principal * monthlyRate * Math.pow(1 + monthlyRate, months) / (Math.pow(1 + monthlyRate, months) - 1);
+        }
+
+        function calculateEqualPrincipal(principal, rate, years) {
+            const monthlyRate = rate / 100 / 12;
+            const months = years * 12;
+            const monthlyPrincipal = principal / months;
+            const firstMonthInterest = principal * monthlyRate;
+            return monthlyPrincipal + firstMonthInterest;
+        }
+
+        function getFundInterestRate(usage, term) {
+            if (usage === 'first') return term <= 5 ? 2.1 : 2.5;
+            return term <= 5 ? 2.525 : 3.075;
         }
 
         // 计算购房成本
-        function calculateCosts() {
-            // 验证输入
-            if (!validateInputs()) {
-                return false;
-            }
-            
-            // 获取表单值
+        document.getElementById('calculate-btn').addEventListener('click', function() {
             const communityName = document.getElementById('community-name').value || '未填写';
-            const area = parseFloat(elements.area.value);
-            const totalPrice = parseFloat(elements.totalPrice.value);
-            const downPaymentRatio = parseInt(elements.downPaymentRatio.value);
+            const area = parseFloat(document.getElementById('area').value);
+            const totalPrice = parseFloat(document.getElementById('total-price').value);
+            const plannedDownRatio = parseInt(document.getElementById('down-payment-ratio').value) / 100;
             const taxTime = document.querySelector('input[name="tax-time"]:checked').value;
-            const loanType = elements.loanType.value;
-            const loanTerm = parseInt(elements.loanTerm.value);
-            const houseCount = parseInt(elements.houseCount.value);
-            const hasLandFee = document.querySelector('input[name="land-fee"]:checked').value === 'yes';
+            const loanType = document.getElementById('loan-type').value;
+            const loanTerm = parseInt(document.getElementById('loan-term').value);
+            const houseCount = parseInt(document.getElementById('house-count').value);
+            const landFee = document.querySelector('input[name="land-fee"]:checked').value;
+            const fundUsage = document.querySelector('input[name="fund-usage"]:checked')?.value || 'first';
+            const familyType = document.querySelector('input[name="family-type"]:checked')?.value || 'single';
             const repaymentMethod = document.querySelector('input[name="repayment-method"]:checked').value;
-            
-            // 公积金相关
-            let fundLoanAmount = 0;
-            let fundUsage = 'first';
-            let familyType = 'single';
-            if (loanType === 'fund' || loanType === 'combination') {
-                fundLoanAmount = parseFloat(elements.fundLoanAmount.value);
-                fundUsage = document.querySelector('input[name="fund-usage"]:checked').value;
-                familyType = document.querySelector('input[name="family-type"]:checked').value;
-            }
-            
-            // 基本计算
-            const plannedDownPayment = totalPrice * (downPaymentRatio / 100);
-            const loanAmountNeeded = totalPrice - plannedDownPayment;
-            
-            // 计算贷款金额（商业+公积金）
+            let fundLoanAmount = parseFloat(fundLoanAmountInput.value) || 0;
             let commercialLoanAmount = 0;
-            let actualLoanAmount = 0;
-            
-            if (loanType === 'fund') {
-                actualLoanAmount = Math.min(fundLoanAmount, loanAmountNeeded);
-            } else if (loanType === 'combination') {
-                fundLoanAmount = Math.min(fundLoanAmount, loanAmountNeeded);
-                commercialLoanAmount = loanAmountNeeded - fundLoanAmount;
-                actualLoanAmount = fundLoanAmount + commercialLoanAmount;
-            } else { // 商业贷款
-                commercialLoanAmount = loanAmountNeeded;
-                actualLoanAmount = commercialLoanAmount;
-            }
-            
-            // 实际首付金额和比例
-            const actualDownPayment = totalPrice - actualLoanAmount;
-            const actualDownRatio = ((actualDownPayment / totalPrice) * 100).toFixed(1);
-            
-            // 单价计算
-            const unitPrice = (totalPrice * 10000 / area).toFixed(2);
-            
-            // 税费计算
-            const deedTaxRate = getDeedTaxRate(houseCount, area);
-            const deedTax = totalPrice * deedTaxRate;
-            
-            const { incomeTax, vat } = calculateTransactionTaxes(totalPrice, taxTime);
-            
-            // 其他费用
-            const landFee = hasLandFee ? (area * 150) / 10000 : 0; // 假设150元/㎡
-            const agentFee = totalPrice * 0.02; // 2% 居间服务费
-            const loanServiceFee = actualLoanAmount * 0.005; // 0.5% 贷款服务费
-            
-            // 前期总成本
-            const totalCost = actualDownPayment + deedTax + incomeTax + vat + landFee + agentFee + loanServiceFee;
-            
-            // 贷款计算
-            const fundRate = getFundLoanRate(loanTerm, fundUsage);
-            const commercialRate = getCommercialLoanRate(loanTerm, houseCount);
-            
-            let fundMonthly = 0;
-            let commercialMonthly = 0;
-            
-            if (fundLoanAmount > 0) {
-                fundMonthly = calculateMonthlyPayment(fundLoanAmount * 10000, fundRate, loanTerm, repaymentMethod);
-            }
-            
-            if (commercialLoanAmount > 0) {
-                commercialMonthly = calculateMonthlyPayment(commercialLoanAmount * 10000, commercialRate, loanTerm, repaymentMethod);
-            }
-            
-            const totalMonthlyPayment = fundMonthly + commercialMonthly;
-            const avgInterestRate = actualLoanAmount > 0 
-                ? ((fundLoanAmount * fundRate + commercialLoanAmount * commercialRate) / actualLoanAmount).toFixed(2)
-                : '0.00';
-            
-            // 填充结果
-            elements.resultContainer.classList.remove('opacity-50');
-            elements.resultCommunity.textContent = communityName;
-            elements.resultArea.textContent = `${area.toFixed(2)} ㎡`;
-            elements.resultTotalPrice.textContent = `${totalPrice.toFixed(1)} 万元`;
-            elements.resultUnitPrice.textContent = `${unitPrice} 元/㎡`;
-            
-            elements.resultPlannedDownRatio.textContent = `${downPaymentRatio}%`;
-            elements.resultActualDownRatio.textContent = `${actualDownRatio}%`;
-            elements.resultDownPayment.textContent = `${actualDownPayment.toFixed(2)} 万元`;
-            elements.resultLoanAmount.textContent = `${actualLoanAmount.toFixed(2)} 万元`;
-            
-            const loanTypeText = {
-                'commercial': '商业贷款',
-                'fund': '公积金贷款',
-                'combination': '组合贷款'
-            }[loanType];
-            elements.resultLoanType.textContent = loanTypeText;
-            elements.resultLoanTerm.textContent = `${loanTerm}年`;
-            
-            // 公积金贷款详情
-            if (fundLoanAmount > 0) {
-                elements.fundLoanDetails.classList.remove('hidden');
-                elements.resultFundAmount.textContent = `${fundLoanAmount.toFixed(2)} 万元`;
-                elements.resultFundRate.textContent = `${fundRate}%`;
-                elements.resultFundMaxAmount.textContent = `${getMaxFundLoanAmount(familyType)} 万元`;
-                elements.resultFundMonthly.textContent = `${fundMonthly.toFixed(2)} 元/月`;
-            } else {
-                elements.fundLoanDetails.classList.add('hidden');
-            }
-            
-            // 商业贷款详情
-            if (commercialLoanAmount > 0) {
-                elements.commercialLoanDetails.classList.remove('hidden');
-                elements.resultCommercialAmount.textContent = `${commercialLoanAmount.toFixed(2)} 万元`;
-                elements.resultCommercialRate.textContent = `${commercialRate}%`;
-                elements.resultCommercialMonthly.textContent = `${commercialMonthly.toFixed(2)} 元/月`;
-            } else {
-                elements.commercialLoanDetails.classList.add('hidden');
-            }
-            
-            // 还款方式
-            const repaymentText = repaymentMethod === 'equal-principal-interest' ? '等额本息' : '等额本金';
-            elements.resultRepaymentMethod.textContent = repaymentText;
-            elements.resultInterestRate.textContent = `${avgInterestRate}%`;
-            elements.resultMonthlyPayment.textContent = `${totalMonthlyPayment.toFixed(2)} 元/月`;
-            
-            // 税费信息
-            elements.resultDeedTax.textContent = `${deedTax.toFixed(2)} 万元`;
-            elements.resultIncomeTax.textContent = `${incomeTax.toFixed(2)} 万元`;
-            elements.resultVat.textContent = `${vat.toFixed(2)} 万元`;
-            elements.resultLandFee.textContent = `${landFee.toFixed(2)} 万元`;
-            elements.resultAgentFee.textContent = `${agentFee.toFixed(2)} 万元`;
-            elements.resultLoanFee.textContent = `${loanServiceFee.toFixed(2)} 万元`;
-            
-            // 总成本
-            elements.resultTotalCost.textContent = `${totalCost.toFixed(2)} 万元`;
-            
-            return true;
-        }
 
-        // 获取契税税率
-        function getDeedTaxRate(houseCount, area) {
-            if (houseCount === 1) {
-                return area <= 90 ? 0.01 : 0.015;
-            } else if (houseCount === 2) {
-                return area <= 90 ? 0.01 : 0.02;
-            } else {
-                return 0.03; // 三套及以上
-            }
-        }
-
-        // 计算交易税费（个税和增值税）
-        function calculateTransactionTaxes(totalPrice, taxTime) {
-            let incomeTax = 0;
-            let vat = 0;
-            
-            if (taxTime === 'less-than-2') {
-                // 不满二：全额增值税5.6%，个税1%
-                vat = totalPrice * 0.056;
-                incomeTax = totalPrice * 0.01;
-            } else if (taxTime === 'more-than-2') {
-                // 满二：免增值税，个税1%
-                incomeTax = totalPrice * 0.01;
-            } else {
-                // 满五唯一：免税
-                incomeTax = 0;
-                vat = 0;
-            }
-            
-            return { incomeTax, vat };
-        }
-
-        // 获取公积金贷款利率
-        function getFundLoanRate(term, usage) {
-            const baseRate = term <= 5 ? FUND_RATES[1] : FUND_RATES[5];
-            // 第二次使用公积金贷款，利率上浮10%
-            return usage === 'second' ? baseRate * 1.1 : baseRate;
-        }
-
-        // 获取商业贷款利率
-        function getCommercialLoanRate(term, houseCount) {
-            const baseRate = term <= 5 ? COMMERCIAL_RATES[1] : COMMERCIAL_RATES[5];
-            
-            // 根据套数调整利率
-            if (houseCount === 1) {
-                return baseRate * 1.0; // 首套基准利率
-            } else if (houseCount === 2) {
-                return baseRate * 1.1; // 二套上浮10%
-            } else {
-                return baseRate * 1.2; // 三套及以上上浮20%
-            }
-        }
-
-        // 计算月供
-        function calculateMonthlyPayment(principal, rate, term, method) {
-            const monthlyRate = rate / 100 / 12;
-            const months = term * 12;
-            
-            if (method === 'equal-principal-interest') {
-                // 等额本息
-                return principal * monthlyRate * Math.pow(1 + monthlyRate, months) / 
-                    (Math.pow(1 + monthlyRate, months) - 1);
-            } else {
-                // 等额本金（首月还款额）
-                const monthlyPrincipal = principal / months;
-                const firstMonthInterest = principal * monthlyRate;
-                return monthlyPrincipal + firstMonthInterest;
-            }
-        }
-
-        // 触发计算（带防抖）
-        function triggerCalculation() {
-            // 清除之前的定时器
-            if (calculationTimer) {
-                clearTimeout(calculationTimer);
-            }
-            
-            // 延迟计算，避免频繁触发
-            calculationTimer = setTimeout(() => {
-                calculateCosts();
-            }, 300);
-        }
-
-        // 生成结果图片
-        function generateResultImage() {
-            // 检查是否有计算结果
-            if (elements.resultContainer.classList.contains('opacity-50')) {
-                showToast('请先完成购房成本计算');
+            // 输入验证
+            if (isNaN(area) || area <= 0) {
+                showToast('请输入有效的房屋面积');
                 return;
             }
+            if (isNaN(totalPrice) || totalPrice <= 0) {
+                showToast('请输入有效的房屋总价');
+                return;
+            }
+            if ((loanType === 'fund' || loanType === 'combination') && (isNaN(fundLoanAmount) || fundLoanAmount <= 0)) {
+                showToast('请输入有效的公积金贷款金额');
+                return;
+            }
+
+            // 核心计算
+            const totalPriceTenThousand = totalPrice;
+            const plannedDownPayment = totalPriceTenThousand * plannedDownRatio;
+            const plannedLoanAmount = totalPriceTenThousand - plannedDownPayment;
+            const maxFundLoanAmount = getMaxFundLoanAmount(familyType);
+
+            if (fundLoanAmount > maxFundLoanAmount) {
+                fundLoanAmount = maxFundLoanAmount;
+                fundLoanAmountInput.value = maxFundLoanAmount;
+                showToast(`公积金贷款金额已调整为最高可贷额度${maxFundLoanAmount}万元`);
+            }
+
+            let totalLoanAmount = 0;
+            if (loanType === 'commercial') {
+                totalLoanAmount = plannedLoanAmount;
+                commercialLoanAmount = totalLoanAmount;
+                fundLoanAmount = 0;
+            } else if (loanType === 'fund') {
+                totalLoanAmount = fundLoanAmount;
+            } else if (loanType === 'combination') {
+                commercialLoanAmount = plannedLoanAmount - fundLoanAmount;
+                totalLoanAmount = plannedLoanAmount;
+                if (commercialLoanAmount < 0) {
+                    commercialLoanAmount = 0;
+                    totalLoanAmount = fundLoanAmount;
+                    showToast('商业贷款金额不能为负数，已自动调整');
+                }
+            }
+
+            let actualDownPayment = totalPriceTenThousand - totalLoanAmount;
+            let actualDownRatio = actualDownPayment / totalPriceTenThousand;
+            if (actualDownRatio < 0.15) {
+                const minDownPayment = totalPriceTenThousand * 0.15;
+                const additionalDown = minDownPayment - actualDownPayment;
+                totalLoanAmount = totalLoanAmount - additionalDown;
+                actualDownPayment = minDownPayment;
+                actualDownRatio = 0.15;
+
+                if (loanType === 'combination') {
+                    commercialLoanAmount = Math.max(0, commercialLoanAmount - additionalDown);
+                    if (commercialLoanAmount === 0) {
+                        fundLoanAmount = Math.max(1, fundLoanAmount - (additionalDown - (plannedLoanAmount - totalLoanAmount)));
+                    }
+                } else if (loanType === 'fund') {
+                    fundLoanAmount = totalLoanAmount;
+                } else {
+                    commercialLoanAmount = totalLoanAmount;
+                }
+                showToast(`首付比例不能低于15%，已自动调整`);
+            }
+
+            const totalPriceYuan = tenThousandToYuan(totalPriceTenThousand);
+            const actualDownPaymentYuan = tenThousandToYuan(actualDownPayment);
+            const commercialLoanAmountYuan = tenThousandToYuan(commercialLoanAmount);
+            const fundLoanAmountYuan = tenThousandToYuan(fundLoanAmount);
+            const totalLoanAmountYuan = tenThousandToYuan(totalLoanAmount);
+
+            const commercialRate = 3.15;
+            let fundRate = 0;
+            let commercialMonthly = 0;
+            let fundMonthly = 0;
+            let totalMonthlyPayment = 0;
+            let averageRate = 0;
+
+            if (loanType === 'fund' || loanType === 'combination') {
+                fundRate = getFundInterestRate(fundUsage, loanTerm);
+            }
+
+            if (loanType === 'commercial' || loanType === 'combination') {
+                if (repaymentMethod === 'equal-principal-interest') {
+                    commercialMonthly = calculateEqualPrincipalInterest(commercialLoanAmountYuan, commercialRate, loanTerm);
+                } else {
+                    commercialMonthly = calculateEqualPrincipal(commercialLoanAmountYuan, commercialRate, loanTerm);
+                }
+            }
+
+            if (loanType === 'fund' || loanType === 'combination') {
+                if (repaymentMethod === 'equal-principal-interest') {
+                    fundMonthly = calculateEqualPrincipalInterest(fundLoanAmountYuan, fundRate, loanTerm);
+                } else {
+                    fundMonthly = calculateEqualPrincipal(fundLoanAmountYuan, fundRate, loanTerm);
+                }
+            }
+
+            totalMonthlyPayment = commercialMonthly + fundMonthly;
+            if (totalLoanAmountYuan > 0) {
+                averageRate = ((commercialLoanAmountYuan * commercialRate) + (fundLoanAmountYuan * fundRate)) / totalLoanAmountYuan;
+                averageRate = averageRate.toFixed(3);
+            }
+
+            let deedTaxRate = 0;
+            if (houseCount === 1) {
+                deedTaxRate = area < 140 ? 0.01 : 0.015;
+            } else if (houseCount === 2) {
+                deedTaxRate = area < 140 ? 0.01 : 0.02;
+            } else {
+                deedTaxRate = 0.03;
+            }
+            const deedTax = totalPriceYuan * deedTaxRate;
+            const incomeTax = taxTime === 'more-than-5' ? 0 : totalPriceYuan * 0.01;
+            const vat = (taxTime === 'more-than-2' || taxTime === 'more-than-5') ? 0 : totalPriceYuan * 0.053;
+            const landTransferFee = landFee === 'yes' ? totalPriceYuan * 0.01 : 0;
+            const agentFee = totalPriceYuan * 0.015;
+            let loanServiceFee = 0;
+            if (loanType === 'commercial') loanServiceFee = 3000;
+            else if (loanType === 'fund') loanServiceFee = 4000;
+            else loanServiceFee = 5000;
+
+            const totalCost = actualDownPaymentYuan + deedTax + incomeTax + vat + landTransferFee + agentFee + loanServiceFee;
+
+            // 更新结果显示
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.classList.remove('opacity-50');
+            resultContainer.classList.add('opacity-100');
+
+            document.getElementById('result-community').textContent = communityName;
+            document.getElementById('result-area').textContent = `${area.toFixed(2)} ㎡`;
+            document.getElementById('result-total-price').textContent = formatCurrency(totalPriceYuan);
+            document.getElementById('result-unit-price').textContent = formatCurrency(Math.round(totalPriceYuan / area)) + '/㎡';
             
-            // 显示加载状态
-            elements.loadingContainer.classList.remove('hidden');
-            elements.generateImageBtn.disabled = true;
-            elements.generateImageBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('result-planned-down-ratio').textContent = `${(plannedDownRatio * 100).toFixed(1)}%`;
+            document.getElementById('result-actual-down-ratio').textContent = `${(actualDownRatio * 100).toFixed(1)}%`;
+            document.getElementById('result-down-payment').textContent = formatCurrency(actualDownPaymentYuan);
+            document.getElementById('result-loan-amount').textContent = formatCurrency(totalLoanAmountYuan);
             
-            const target = document.getElementById('screenshot-target');
+            let loanTypeText = loanType === 'commercial' ? '商业贷款' : (loanType === 'fund' ? '公积金贷款' : '组合贷款');
+            document.getElementById('result-loan-type').textContent = loanTypeText;
+            document.getElementById('result-loan-term').textContent = `${loanTerm}年`;
             
-            // 使用html2canvas生成图片
-            html2canvas(target, {
-                scale: 2, // 提高清晰度
-                useCORS: true,
-                logging: false
-            }).then(canvas => {
-                // 隐藏加载状态
-                elements.loadingContainer.classList.add('hidden');
-                elements.generateImageBtn.disabled = false;
-                elements.generateImageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            const fundLoanDetails = document.getElementById('fund-loan-details');
+            if (loanType === 'fund' || loanType === 'combination') {
+                fundLoanDetails.classList.remove('hidden');
+                document.getElementById('result-fund-amount').textContent = formatCurrency(fundLoanAmountYuan);
+                document.getElementById('result-fund-rate').textContent = `${fundRate}%`;
+                document.getElementById('result-fund-max-amount').textContent = formatCurrency(tenThousandToYuan(maxFundLoanAmount));
+                document.getElementById('result-fund-monthly').textContent = formatCurrency(Math.round(fundMonthly));
+            } else {
+                fundLoanDetails.classList.add('hidden');
+            }
+            
+            const commercialLoanDetails = document.getElementById('commercial-loan-details');
+            if (loanType === 'commercial' || loanType === 'combination') {
+                commercialLoanDetails.classList.remove('hidden');
+                document.getElementById('result-commercial-amount').textContent = formatCurrency(commercialLoanAmountYuan);
+                document.getElementById('result-commercial-rate').textContent = `${commercialRate}%`;
+                document.getElementById('result-commercial-monthly').textContent = formatCurrency(Math.round(commercialMonthly));
+            } else {
+                commercialLoanDetails.classList.add('hidden');
+            }
+            
+            document.getElementById('result-repayment-method').textContent = repaymentMethod === 'equal-principal-interest' ? '等额本息' : '等额本金（首月）';
+            document.getElementById('result-interest-rate').textContent = `${averageRate}%`;
+            document.getElementById('result-monthly-payment').textContent = formatCurrency(Math.round(totalMonthlyPayment));
+            
+            document.getElementById('result-deed-tax').textContent = formatCurrency(Math.round(deedTax));
+            document.getElementById('result-income-tax').textContent = formatCurrency(Math.round(incomeTax));
+            document.getElementById('result-vat').textContent = formatCurrency(Math.round(vat));
+            document.getElementById('result-land-fee').textContent = formatCurrency(Math.round(landTransferFee));
+            document.getElementById('result-agent-fee').textContent = formatCurrency(Math.round(agentFee));
+            document.getElementById('result-loan-fee').textContent = formatCurrency(loanServiceFee);
+            document.getElementById('result-total-cost').textContent = formatCurrency(Math.round(totalCost));
+
+            if (window.innerWidth < 1024) {
+                document.getElementById('screenshot-target').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
+            showToast('计算完成，可生成图片用于微信/企业微信分享');
+        });
+
+        // 生成图片功能
+        let generatedImageUrl = '';
+        const generateBtn = document.getElementById('generate-image-btn');
+        const downloadBtn = document.getElementById('download-image-btn');
+        const shareBtn = document.getElementById('share-image-btn');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const loadingContainer = document.getElementById('loading-container');
+        const screenshotTarget = document.getElementById('screenshot-target');
+        const imageModal = document.getElementById('image-modal');
+        const modalImage = document.getElementById('modal-image');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+        // 生成图片
+        generateBtn.addEventListener('click', async function() {
+            const resultContainer = document.getElementById('result-container');
+            if (resultContainer.classList.contains('opacity-50')) {
+                showToast('请先计算购房成本，再生成图片');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            loadingContainer.classList.remove('hidden');
+            imagePreviewContainer.classList.add('hidden');
+
+            try {
+                // 临时保存原始样式
+                const originalWidth = screenshotTarget.style.width;
+                const originalPadding = screenshotTarget.style.padding;
                 
-                // 显示预览
-                const imgData = canvas.toDataURL('image/png');
-                elements.imagePreview.src = imgData;
-                elements.imagePreviewContainer.classList.remove('hidden');
+                // 设置为A4尺寸用于生成图片
+                screenshotTarget.style.width = '794px';
+                screenshotTarget.style.padding = '24px';
                 
-                // 启用下载和分享按钮
-                elements.downloadImageBtn.disabled = false;
-                elements.downloadImageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                elements.shareImageBtn.disabled = false;
-                elements.shareImageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                const canvas = await html2canvas(screenshotTarget, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                });
+
+                // 恢复原始样式
+                screenshotTarget.style.width = originalWidth;
+                screenshotTarget.style.padding = originalPadding;
+
+                generatedImageUrl = canvas.toDataURL('image/png', 1.0);
+
+                imagePreview.src = generatedImageUrl;
+                modalImage.src = generatedImageUrl;
+                loadingContainer.classList.add('hidden');
+                imagePreviewContainer.classList.remove('hidden');
                 
-                // 保存图片数据用于下载
-                elements.downloadImageBtn.onclick = () => {
-                    const link = document.createElement('a');
-                    link.download = '购房成本计算结果.png';
-                    link.href = imgData;
-                    link.click();
-                    showToast('图片已下载');
-                };
-                
-                // 图片预览点击放大
-                elements.imagePreview.onclick = () => {
-                    elements.modalImage.src = imgData;
-                    elements.imageModal.classList.remove('hidden');
-                };
-                
-                showToast('图片生成成功');
-            }).catch(error => {
-                // 处理错误
-                elements.loadingContainer.classList.add('hidden');
-                elements.generateImageBtn.disabled = false;
-                elements.generateImageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                downloadBtn.disabled = false;
+                shareBtn.disabled = false;
+                downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                shareBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                showToast('图片生成成功，可下载后发微信/企业微信');
+            } catch (error) {
+                console.error('生成图片失败：', error);
+                loadingContainer.classList.add('hidden');
                 showToast('图片生成失败，请重试');
-                console.error('生成图片错误:', error);
-            });
-        }
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
 
-        // 复制链接功能
-        function copyShareLink() {
-            // 实际项目中可以替换为真实的分享链接
-            const dummyLink = window.location.href;
+        // 下载图片
+        downloadBtn.addEventListener('click', function() {
+            if (!generatedImageUrl) {
+                showToast('请先生成图片');
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.href = generatedImageUrl;
+            const communityName = document.getElementById('result-community').textContent || '未知小区';
+            const date = new Date().toLocaleDateString().replace(/\//g, '-');
+            link.download = `购房成本_${communityName}_${date}.png`;
             
-            navigator.clipboard.writeText(dummyLink).then(() => {
-                showToast('链接已复制到剪贴板');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('图片已下载，可在微信/企业微信聊天窗口发送');
+        });
+
+        // 分享功能
+        shareBtn.addEventListener('click', function() {
+            if (!generatedImageUrl) {
+                showToast('请先生成图片');
+                return;
+            }
+
+            navigator.clipboard.writeText(generatedImageUrl).then(() => {
+                showToast('图片链接已复制，粘贴到微信/企业微信聊天窗口即可打开分享');
             }).catch(err => {
-                showToast('复制失败，请手动复制');
-                console.error('复制失败:', err);
+                console.error('复制失败：', err);
+                showToast('复制失败，建议下载图片后直接发送到聊天窗口');
             });
-        }
+        });
 
-        // 初始化事件监听
-        function initEventListeners() {
-            // 首付比例滑块
-            elements.downPaymentRatio.addEventListener('input', function() {
-                elements.ratioValue.textContent = `${this.value}%`;
-                if (elements.realtimeCalculation.checked) {
-                    triggerCalculation();
-                }
-            });
-            
-            // 贷款类型变更
-            elements.loanType.addEventListener('change', updateLoanOptions);
-            
-            // 家庭类型变更
-            document.querySelectorAll('input[name="family-type"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    updateFundMaxAmount();
-                    if (elements.realtimeCalculation.checked) {
-                        triggerCalculation();
-                    }
-                });
-            });
-            
-            // 公积金使用次数变更
-            document.querySelectorAll('input[name="fund-usage"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    if (elements.realtimeCalculation.checked) {
-                        triggerCalculation();
-                    }
-                });
-            });
-            
-            // 计算按钮
-            elements.calculateBtn.addEventListener('click', calculateCosts);
-            
-            // 实时计算
-            elements.realtimeCalculation.addEventListener('change', function() {
-                if (this.checked) {
-                    triggerCalculation();
-                }
-            });
-            
-            // 输入框变化时触发实时计算
-            const realtimeInputs = [
-                elements.area, elements.totalPrice, elements.fundLoanAmount,
-                elements.loanTerm, elements.houseCount
-            ];
-            
-            realtimeInputs.forEach(input => {
-                input.addEventListener('input', function() {
-                    if (elements.realtimeCalculation.checked) {
-                        triggerCalculation();
-                    }
-                });
-            });
-            
-            // 其他单选框变化时触发实时计算
-            const radioGroups = ['tax-time', 'repayment-method', 'land-fee'];
-            radioGroups.forEach(group => {
-                document.querySelectorAll(`input[name="${group}"]`).forEach(radio => {
-                    radio.addEventListener('change', function() {
-                        if (elements.realtimeCalculation.checked) {
-                            triggerCalculation();
-                        }
-                    });
-                });
-            });
-            
-            // 生成图片按钮
-            elements.generateImageBtn.addEventListener('click', generateResultImage);
-            
-            // 分享按钮
-            elements.shareImageBtn.addEventListener('click', copyShareLink);
-            
-            // 关闭图片弹窗
-            elements.closeModalBtn.addEventListener('click', function() {
-                elements.imageModal.classList.add('hidden');
-            });
-            
-            // 点击弹窗背景关闭
-            elements.imageModal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    elements.imageModal.classList.add('hidden');
-                }
-            });
-        }
+        // 图片预览放大
+        imagePreview.addEventListener('click', function() {
+            imageModal.classList.remove('hidden');
+        });
 
-        // 初始化
-        function init() {
-            initLoanTerms();
-            updateLoanOptions();
-            initEventListeners();
-        }
+        closeModalBtn.addEventListener('click', function() {
+            imageModal.classList.add('hidden');
+        });
 
-        // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', init);
+        imageModal.addEventListener('click', function(e) {
+            if (e.target === imageModal) {
+                imageModal.classList.add('hidden');
+            }
+        });
+
+        // 其他辅助事件
+        document.getElementById('down-payment-ratio').addEventListener('input', function() {
+            document.getElementById('ratio-value').textContent = `${this.value}%`;
+            
+            // 如果启用了实时计算，触发计算
+            if (document.getElementById('realtime-calculation').checked && validateInputs()) {
+                clearTimeout(realtimeTimeout);
+                realtimeTimeout = setTimeout(() => {
+                    document.getElementById('calculate-btn').click();
+                }, 800);
+            }
+        });
+
+        fundLoanAmountInput.addEventListener('blur', function() {
+            const familyType = document.querySelector('input[name="family-type"]:checked')?.value || 'single';
+            const maxAmount = getMaxFundLoanAmount(familyType);
+            const currentValue = parseFloat(this.value) || 0;
+            
+            if (currentValue > maxAmount) {
+                this.value = maxAmount;
+                showToast(`公积金贷款金额不能超过最高额度${maxAmount}万元`);
+            }
+            
+            // 如果启用了实时计算，触发计算
+            if (document.getElementById('realtime-calculation').checked && validateInputs()) {
+                document.getElementById('calculate-btn').click();
+            }
+        });
+
+        document.getElementById('calculator-form').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.target.matches('textarea, select')) {
+                e.preventDefault();
+                document.getElementById('calculate-btn').click();
+            }
+        });
+
+        // 初始化实时计算功能
+        setupRealtimeCalculation();
     </script>
 </body>
 </html>
