@@ -1,0 +1,2023 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>购房成本计算器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        accent: '#FF7D00',
+                        neutral: '#F5F7FA',
+                        dark: '#1D2129',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            }
+            .input-focus {
+                @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
+            }
+            .transition-custom {
+                @apply transition-all duration-300 ease-in-out;
+            }
+            .screenshot-container {
+                @apply bg-white rounded-xl p-4 card-shadow;
+                width: 100%;
+                min-height: auto;
+                margin: 0 auto;
+                box-sizing: border-box;
+            }
+            .mobile-optimized {
+                @apply space-y-4;
+            }
+            .cost-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+            @media (min-width: 768px) {
+                .cost-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+            .result-loading {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+            @keyframes fadeIn {
+                0% { opacity: 0.7; }
+                100% { opacity: 1; }
+            }
+            @media (max-width: 320px) {
+                .cost-grid {
+                    grid-template-columns: 1fr !important;
+                }
+            }
+            button:active, .btn:active {
+                transform: scale(0.98);
+            }
+            .validation-message {
+                @apply text-red-500 text-xs mt-2 hidden;
+            }
+            .floating-actions {
+                @apply fixed bottom-6 right-6 flex flex-col gap-3 z-50;
+            }
+            .floating-btn {
+                @apply w-12 h-12 rounded-full shadow-lg flex items-center justify-center 
+                       text-white transition-all duration-300 hover:scale-110;
+            }
+            .floating-tooltip {
+                @apply absolute right-14 bg-dark text-white text-xs py-1 px-2 rounded 
+                       opacity-0 transition-opacity duration-300 pointer-events-none whitespace-nowrap;
+            }
+            .floating-btn-container {
+                @apply relative;
+            }
+            .floating-btn-container:hover .floating-tooltip {
+                @apply opacity-100;
+            }
+            .repayment-table {
+                @apply w-full text-xs border-collapse;
+            }
+            .repayment-table th, .repayment-table td {
+                @apply border border-gray-200 p-2 text-center;
+            }
+            .repayment-table th {
+                @apply bg-gray-50 font-medium;
+            }
+        }
+        @media (max-width: 768px) {
+            .container {
+                @apply px-3;
+            }
+            .card-shadow {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            }
+            .mobile-collapse {
+                @apply py-2;
+            }
+            .mobile-collapse .p-6 {
+                @apply p-4;
+            }
+            .mobile-collapse .space-y-5 {
+                @apply space-y-3;
+            }
+            .mobile-collapse .text-xl {
+                @apply text-lg;
+            }
+            .mobile-collapse .gap-8 {
+                @apply gap-5;
+            }
+            .mobile-collapse .gap-4 {
+                @apply gap-3;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-dark min-h-screen">
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto px-3 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-home text-primary text-xl"></i>
+                <h1 class="text-lg font-bold text-primary">购房成本计算器</h1>
+            </div>
+            <div class="text-xs text-gray-500 hidden md:block">
+                轻松计算您的购房各项费用
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-3 py-5 max-w-6xl mobile-optimized">
+        <div class="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-5 text-sm">
+            <div class="flex items-start">
+                <i class="fa fa-info-circle text-primary mt-0.5 mr-2"></i>
+                <p class="text-gray-600">
+                    本计算器可帮助您估算购房过程中的各项费用，包括首付、贷款、税费等，结果仅供参考，实际费用以相关部门核算为准。
+                </p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            <!-- 输入表单区域 -->
+            <div class="lg:col-span-2 mobile-collapse">
+                <div class="bg-white rounded-xl p-4 card-shadow h-full">
+                    <h2 class="text-base font-bold mb-4 pb-2 border-b border-gray-100">
+                        <i class="fa fa-pencil-square-o text-primary mr-2"></i>填写房屋信息
+                    </h2>
+                    
+                    <form id="calculator-form" class="space-y-4">
+                        <!-- 小区名称 -->
+                        <div>
+                            <label for="community-name" class="block text-sm font-medium text-gray-700 mb-1">小区名称</label>
+                            <input type="text" id="community-name" placeholder="例如：幸福家园" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
+                        </div>
+                        
+                        <!-- 面积和总价 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="relative">
+                                <label for="area" class="block text-sm font-medium text-gray-700 mb-1">房屋面积</label>
+                                <input type="number" id="area" min="1" step="0.01" placeholder="例如：120.5" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm pr-10">
+                                <span class="absolute right-3 top-[32px] text-gray-500 text-sm">㎡</span>
+                            </div>
+                            <div class="relative">
+                                <label for="total-price" class="block text-sm font-medium text-gray-700 mb-1">房屋总价</label>
+                                <input type="number" id="total-price" min="1" step="0.1" placeholder="例如：280.5" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm pr-10">
+                                <span class="absolute right-3 top-[32px] text-gray-500 text-sm">万元</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 首付方式选择 -->
+                        <div id="down-payment-container">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">首付设置</label>
+                            <div class="flex space-x-3 mb-2">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="down-payment-type" value="ratio" checked
+                                        class="w-4 h-4 accent-primary">
+                                    <span class="ml-2 text-sm">按比例计算</span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="down-payment-type" value="amount"
+                                        class="w-4 h-4 accent-primary">
+                                    <span class="ml-2 text-sm">按金额计算</span>
+                                </label>
+                            </div>
+                            
+                            <!-- 首付比例输入 -->
+                            <div id="down-payment-ratio-container">
+                                <label for="down-payment-ratio" class="block text-sm font-medium text-gray-700 mb-1">
+                                    首付比例 
+                                    <span id="min-ratio-text" class="text-xs text-gray-500">(最低15%)</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="down-payment-ratio" min="15" max="100" step="0.1" value="30"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm pr-10">
+                                    <span class="absolute right-3 top-[32px] text-gray-500 text-sm">%</span>
+                                </div>
+                            </div>
+                            
+                            <!-- 首付金额输入 -->
+                            <div id="down-payment-amount-container" class="hidden">
+                                <label for="down-payment-amount" class="block text-sm font-medium text-gray-700 mb-1">
+                                    首付金额 
+                                    <span id="min-amount-text" class="text-xs text-gray-500">(最低42.08万元)</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="down-payment-amount" min="0" step="0.01" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm pr-10">
+                                    <span class="absolute right-3 top-[32px] text-gray-500 text-sm">万元</span>
+                                </div>
+                            </div>
+                            
+                            <!-- 公积金贷款时的提示 -->
+                            <div id="fund-down-payment-hint" class="hidden mt-2 text-xs text-primary bg-primary/5 p-2 rounded">
+                                <i class="fa fa-info-circle mr-1"></i>
+                                <span>公积金贷款将使用最高可贷金额，首付比例将自动计算</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 校验提示 -->
+                        <div id="validation-message" class="validation-message"></div>
+                        
+                        <!-- 契税时间 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">契税时间</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <label class="relative">
+                                    <input type="radio" name="tax-time" value="less-than-2" checked 
+                                        class="peer sr-only">
+                                    <span class="block text-center px-2 py-1.5 border border-gray-300 rounded-md cursor-pointer text-xs
+                                        peer-checked:border-primary peer-checked:bg-primary/5 transition-custom">不满二</span>
+                                </label>
+                                <label class="relative">
+                                    <input type="radio" name="tax-time" value="more-than-2" 
+                                        class="peer sr-only">
+                                    <span class="block text-center px-2 py-1.5 border border-gray-300 rounded-md cursor-pointer text-xs
+                                        peer-checked:border-primary peer-checked:bg-primary/5 transition-custom">满二</span>
+                                </label>
+                                <label class="relative">
+                                    <input type="radio" name="tax-time" value="more-than-5" 
+                                        class="peer sr-only">
+                                    <span class="block text-center px-2 py-1.5 border border-gray-300 rounded-md cursor-pointer text-xs
+                                        peer-checked:border-primary peer-checked:bg-primary/5 transition-custom">满五唯一</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- 贷款方式 -->
+                        <div>
+                            <label for="loan-type" class="block text-sm font-medium text-gray-700 mb-1">贷款方式</label>
+                            <select id="loan-type" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom bg-white text-sm">
+                                <option value="commercial">商业贷款</option>
+                                <option value="fund">公积金贷款</option>
+                                <option value="combination">组合贷款</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 贷款利率设置 -->
+                        <div id="interest-rate-container" class="space-y-3">
+                            <div id="commercial-rate-container">
+                                <label for="commercial-rate" class="block text-sm font-medium text-gray-700 mb-1">商业贷款利率 (%)</label>
+                                <input type="number" id="commercial-rate" step="0.01" value="3.15" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
+                            </div>
+                            <div id="fund-rate-container" class="hidden">
+                                <label for="fund-rate" class="block text-sm font-medium text-gray-700 mb-1">公积金贷款利率 (%)</label>
+                                <input type="number" id="fund-rate" step="0.01" value="2.5" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
+                            </div>
+                        </div>
+                        
+                        <!-- 公积金相关选项 -->
+                        <div id="fund-options-container" class="hidden space-y-4">
+                            <!-- 公积金使用次数 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">公积金使用次数</label>
+                                <div class="flex space-x-3">
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="radio" name="fund-usage" value="first" checked
+                                            class="w-4 h-4 accent-primary">
+                                        <span class="ml-2 text-sm">第一次使用</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="radio" name="fund-usage" value="second"
+                                            class="w-4 h-4 accent-primary">
+                                        <span class="ml-2 text-sm">第二次使用</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- 家庭人数和子女情况 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">家庭情况</label>
+                                <div class="space-y-2">
+                                    <div>
+                                        <label class="block text-xs text-gray-600 mb-1">家庭人数</label>
+                                        <div class="flex space-x-3">
+                                            <label class="flex items-center cursor-pointer">
+                                                <input type="radio" name="family-size" value="single" checked
+                                                    class="w-4 h-4 accent-primary">
+                                                <span class="ml-2 text-sm">单人</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <input type="radio" name="family-size" value="couple"
+                                                    class="w-4 h-4 accent-primary">
+                                                <span class="ml-2 text-sm">双人</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-600 mb-1">子女情况</label>
+                                        <div class="flex space-x-3">
+                                            <label class="flex items-center cursor-pointer">
+                                                <input type="radio" name="children" value="none" checked
+                                                    class="w-4 h-4 accent-primary">
+                                                <span class="ml-2 text-sm">无子女/一孩</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <input type="radio" name="children" value="multiple"
+                                                    class="w-4 h-4 accent-primary">
+                                                <span class="ml-2 text-sm">二孩及以上</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 公积金贷款金额 -->
+                            <div id="fund-amount-container">
+                                <label for="fund-loan-amount" class="block text-sm font-medium text-gray-700 mb-1">
+                                    公积金贷款金额 (万元)
+                                    <span id="fund-max-amount-text" class="text-xs text-gray-500 ml-2">(最高可贷: 75万元)</span>
+                                </label>
+                                <input type="number" id="fund-loan-amount" min="1" step="1" placeholder="不填则使用最高可贷金额" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom text-sm">
+                            </div>
+                        </div>
+                        
+                        <!-- 贷款年限 -->
+                        <div>
+                            <label for="loan-term" class="block text-sm font-medium text-gray-700 mb-1">贷款年限</label>
+                            <select id="loan-term" 
+                                class="w-100 px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom bg-white text-sm">
+                                    <!-- 选项将通过JavaScript动态生成1-40年 -->
+                            </select>
+                        </div>
+                        
+                        <!-- 住房套数 -->
+                        <div>
+                            <label for="house-count" class="block text-sm font-medium text-gray-700 mb-1">住房套数（影响契税）</label>
+                            <select id="house-count" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md input-focus transition-custom bg-white text-sm">
+                                <option value="1" selected>首套</option>
+                                <option value="2">二套</option>
+                                <option value="3">三套及以上</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 土地出让金 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">是否有土地出让金（总价的1%）</label>
+                            <div class="flex space-x-3">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="land-fee" value="yes" 
+                                        class="w-4 h-4 accent-primary">
+                                    <span class="ml-2 text-sm">是</span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="land-fee" value="no" checked
+                                        class="w-4 h-4 accent-primary">
+                                    <span class="ml-2 text-sm">否</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- 印花税 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">是否缴纳印花税（总价的0.05%）</label>
+                            <div class="flex space-x-3">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="stamp-duty-option" value="yes" 
+                                        class="w-4 h-4 accent-primary">
+                                    <span class="ml-2 text-sm">是</span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="stamp-duty-option" value="no" checked
+                                        class="w-4 h-4 accent-primary">
+                                    <span class="ml-2 text-sm">否</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- 计算按钮 -->
+                        <button type="button" id="calculate-btn" 
+                            class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 px-4 rounded-md 
+                                transition-custom flex items-center justify-center text-sm">
+                            <i class="fa fa-calculator mr-2"></i> 计算购房成本
+                        </button>
+
+                        <!-- 实时计算开关 -->
+                        <div class="flex items-center pt-2">
+                            <input type="checkbox" id="realtime-calculation" class="w-4 h-4 accent-primary">
+                            <label for="realtime-calculation" class="ml-2 text-sm text-gray-600">启用实时计算</label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 结果展示区域 -->
+            <div class="lg:col-span-3">
+                <!-- 截图容器 -->
+                <div id="screenshot-target" class="screenshot-container mb-5">
+                    <h2 class="text-base font-bold mb-4 pb-2 border-b border-gray-100">
+                        <i class="fa fa-bar-chart text-primary mr-2"></i>购房成本计算结果
+                    </h2>
+                    
+                    <div id="result-container" class="opacity-50">
+                        <!-- 基本信息 -->
+                        <div class="cost-grid mb-5">
+                            <div class="bg-neutral rounded-md p-3">
+                                <h3 class="text-xs text-gray-500 mb-1">小区名称</h3>
+                                <p id="result-community" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <h3 class="text-xs text-gray-500 mb-1">房屋面积</h3>
+                                <p id="result-area" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <h3 class="text-xs text-gray-500 mb-1">房屋总价</h3>
+                                <p id="result-total-price" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <h3 class="text-xs text-gray-500 mb-1">单价</h3>
+                                <p id="result-unit-price" class="font-medium text-sm">-</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 首付和贷款信息 -->
+                        <h3 class="text-base font-semibold mb-3">首付与贷款信息</h3>
+                        <div class="cost-grid mb-5">
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">首付比例</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="根据贷款类型不同，首付比例计算方式不同">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-down-payment-ratio" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">首付款</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="首付款 = 房屋总价 × 首付比例">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-down-payment" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">贷款总金额</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="贷款总金额 = 房屋总价 - 首付款">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-loan-amount" class="font-medium text-sm">-</p>
+                            </div>
+                            <!-- 组合贷款专用字段 -->
+                            <div id="result-commercial-amount-container" class="bg-neutral rounded-md p-3 hidden">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">商业贷款金额</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="组合贷款中的商业贷款部分">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-commercial-amount" class="font-medium text-sm">-</p>
+                            </div>
+                            <div id="result-fund-amount-container" class="bg-neutral rounded-md p-3 hidden">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">公积金贷款金额</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="组合贷款中的公积金贷款部分">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-fund-amount" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">贷款年限</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="贷款年限由用户自行选择">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-loan-term" class="font-medium text-sm">-</p>
+                            </div>
+                            <!-- 利率显示 -->
+                            <div id="result-single-rate-container" class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">贷款利率</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="根据贷款类型和政策设定的年利率">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-interest-rate" class="font-medium text-sm">-</p>
+                            </div>
+                            <div id="result-commercial-rate-container" class="bg-neutral rounded-md p-3 hidden">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">商业贷款利率</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="商业贷款部分的年利率">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-commercial-rate" class="font-medium text-sm">-</p>
+                            </div>
+                            <div id="result-fund-rate-container" class="bg-neutral rounded-md p-3 hidden">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">公积金贷款利率</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="公积金贷款部分的年利率">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-fund-rate" class="font-medium text-sm">-</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 还款方式对比 -->
+                        <h3 class="text-base font-semibold mb-3">还款方式对比</h3>
+                        <div class="mb-5 overflow-x-auto">
+                            <table class="repayment-table">
+                                <thead>
+                                    <tr>
+                                        <th>还款方式</th>
+                                        <th>首月还款</th>
+                                        <th>第2-12期</th>
+                                        <th>倒数第12-2期</th>
+                                        <th>最后一期</th>
+                                        <th>总利息</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr id="equal-principal-interest-row">
+                                        <td class="font-medium">等额本息</td>
+                                        <td id="epi-first-month">-</td>
+                                        <td id="epi-middle-months">-</td>
+                                        <td id="epi-late-middle-months">-</td>
+                                        <td id="epi-last-month">-</td>
+                                        <td id="epi-total-interest">-</td>
+                                    </tr>
+                                    <tr id="equal-principal-row">
+                                        <td class="font-medium">等额本金</td>
+                                        <td id="ep-first-month">-</td>
+                                        <td id="ep-middle-months">-</td>
+                                        <td id="ep-late-middle-months">-</td>
+                                        <td id="ep-last-month">-</td>
+                                        <td id="ep-total-interest">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="bg-primary/5 p-3 rounded-md text-sm mb-5">
+                            <p>
+                                <i class="fa fa-lightbulb-o text-primary mr-2"></i>
+                                <span>等额本金比等额本息总利息少 
+                                    <span id="interest-difference" class="font-medium text-primary">-</span>
+                                </span>
+                            </p>
+                        </div>
+                        
+                        <!-- 税费信息 -->
+                        <h3 class="text-base font-semibold mb-3">税费信息</h3>
+                        <div class="cost-grid mb-5">
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">契税</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="首套144平以下1%，以上1.5%；二套144平以下1%，以上2%；三套及以上3%">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-tax" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">个人所得税</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="个人所得税 = 总价 × 1%（满五唯一免征）">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-income-tax" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">增值税及附加</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="增值税及附加 = 总价 × 5.6%（满二免征）">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-vat" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">登记费</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="住宅登记费固定为80元">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-registration-fee" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">印花税</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="印花税 = 总价 × 0.05%（选择缴纳时）">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-stamp-duty" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">土地出让金</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="土地出让金 = 总价 × 1%（选择有时）">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-land-fee" class="font-medium text-sm">-</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 中介服务费用 -->
+                        <h3 class="text-base font-semibold mb-3">中介服务费用</h3>
+                        <div class="cost-grid mb-5">
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">居间服务费</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="房屋总价的1.5%">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-brokerage-fee" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">贷款服务费</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="商业贷款3000元，公积金4000元，组合贷5000元">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-loan-service-fee" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">中介服务总计</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="居间服务费与贷款服务费的总和">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-total-service-fee" class="font-medium text-sm">-</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 总成本信息 -->
+                        <h3 class="text-base font-semibold mb-3">总成本信息</h3>
+                        <div class="cost-grid mb-5">
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">税费总计</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="各项税费的总和">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-total-taxes" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">首付+税费+服务费</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="首付款、各项税费与中介服务费的总和">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-down-taxes" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">等额本息总利息</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="等额本息方式下贷款期间需要支付的总利息">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-epi-total-interest" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">等额本金总利息</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="等额本金方式下贷款期间需要支付的总利息">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-ep-total-interest" class="font-medium text-sm">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3 col-span-2 md:col-span-1">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">购房总成本（等额本息）</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="房屋总价+各项税费+中介服务费+等额本息总利息">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-epi-total-cost" class="font-medium text-sm text-primary">-</p>
+                            </div>
+                            <div class="bg-neutral rounded-md p-3 col-span-2 md:col-span-1">
+                                <div class="flex items-center">
+                                    <h3 class="text-xs text-gray-500 mb-1">购房总成本（等额本金）</h3>
+                                    <span class="ml-1 text-primary cursor-help" title="房屋总价+各项税费+中介服务费+等额本金总利息">
+                                        <i class="fa fa-question-circle"></i>
+                                    </span>
+                                </div>
+                                <p id="result-ep-total-cost" class="font-medium text-sm text-primary">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 历史记录 -->
+                <div class="mt-5 bg-white rounded-xl p-4 card-shadow">
+                    <h3 class="text-base font-semibold mb-3">
+                        <i class="fa fa-history text-primary mr-2"></i>最近计算记录
+                    </h3>
+                    <div id="history-container" class="space-y-2 text-sm">
+                        <p class="text-gray-500 italic text-xs">暂无计算记录</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 悬浮操作按钮 -->
+    <div class="floating-actions">
+        <div class="floating-btn-container">
+            <button id="reset-form" class="floating-btn bg-gray-500">
+                <i class="fa fa-refresh"></i>
+            </button>
+            <span class="floating-tooltip">重置表单</span>
+        </div>
+        <div class="floating-btn-container">
+            <button id="copy-link" class="floating-btn bg-accent">
+                <i class="fa fa-link"></i>
+            </button>
+            <span class="floating-tooltip">复制分享链接</span>
+        </div>
+        <div class="floating-btn-container">
+            <button id="generate-image" class="floating-btn bg-secondary">
+                <i class="fa fa-image"></i>
+            </button>
+            <span class="floating-tooltip">生成计算结果图片</span>
+        </div>
+        <div class="floating-btn-container">
+            <button id="calculate-float-btn" class="floating-btn bg-primary">
+                <i class="fa fa-calculator"></i>
+            </button>
+            <span class="floating-tooltip">计算购房成本</span>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t border-gray-200 mt-8 py-4">
+        <div class="container mx-auto px-3 text-center text-xs text-gray-500">
+            <p>购房成本计算器 &copy; 2025 | 结果仅供参考，实际费用以相关部门核算为准</p>
+        </div>
+    </footer>
+
+    <script>
+        // 金额格式化函数：小于10000元显示为元，否则显示为万元
+        function formatAmount(amount, isPrice = false) {
+            if (amount === undefined || amount === null || isNaN(amount)) return '-';
+            
+            // 单价特殊处理（元/㎡）
+            if (isPrice) {
+                return `${amount.toFixed(2)} 元/㎡`;
+            }
+            
+            // 小于10000元的金额显示为元
+            if (amount < 1) {
+                return `${Math.round(amount * 10000)} 元`;
+            }
+            
+            // 大于等于10000元的金额显示为万元
+            return `${amount.toFixed(2)} 万元`;
+        }
+        
+        // 模块化计算逻辑
+        const Calculator = {
+            // 获取最低首付比例
+            getMinDownPaymentRatio(loanType) {
+                if (loanType === 'commercial') {
+                    return 15; // 商业贷款最低15%
+                } else {
+                    return 20; // 公积金和组合贷最低20%
+                }
+            },
+            
+            // 计算首付金额
+            calculateDownPaymentAmount(totalPrice, ratio) {
+                return totalPrice * (ratio / 100);
+            },
+            
+            // 计算首付比例
+            calculateDownPaymentRatio(totalPrice, amount) {
+                return (amount / totalPrice) * 100;
+            },
+            
+            // 计算贷款金额 - 根据不同贷款类型
+            calculateLoanAmounts(loanType, totalPrice, downPayment, fundLoanAmount, maxFundLoanAmount) {
+                if (loanType === 'commercial') {
+                    // 商业贷款：贷款金额 = 总价 - 首付金额
+                    const loanAmount = totalPrice - downPayment;
+                    return {
+                        totalLoan: loanAmount,
+                        commercialLoan: loanAmount,
+                        fundLoan: 0
+                    };
+                } else if (loanType === 'fund') {
+                    // 公积金贷款：贷款金额 = 设定的最高额度，首付金额 = 总价 - 贷款金额
+                    const actualFundLoan = fundLoanAmount || maxFundLoanAmount;
+                    const totalLoan = actualFundLoan;
+                    const actualDownPayment = totalPrice - totalLoan;
+                    const downPaymentRatio = this.calculateDownPaymentRatio(totalPrice, actualDownPayment);
+                    
+                    return {
+                        totalLoan,
+                        commercialLoan: 0,
+                        fundLoan: totalLoan,
+                        actualDownPayment,
+                        downPaymentRatio
+                    };
+                } else { // combination
+                    // 组合贷款：公积金部分使用设定额度，商业贷款部分 = 总价 - 首付金额 - 公积金贷款
+                    // 修复：当公积金贷款金额大于等于贷款总额时，全部使用公积金贷款
+                    const totalLoanNeeded = totalPrice - downPayment;
+                    const actualFundLoan = fundLoanAmount || maxFundLoanAmount;
+                    
+                    // 如果公积金贷款金额大于等于所需总贷款，全部使用公积金贷款
+                    if (actualFundLoan >= totalLoanNeeded) {
+                        return {
+                            totalLoan: totalLoanNeeded,
+                            commercialLoan: 0,
+                            fundLoan: totalLoanNeeded
+                        };
+                    }
+                    
+                    const commercialLoan = totalLoanNeeded - actualFundLoan;
+                    const totalLoan = commercialLoan + actualFundLoan;
+                    
+                    return {
+                        totalLoan,
+                        commercialLoan,
+                        fundLoan: actualFundLoan
+                    };
+                }
+            },
+            
+            // 计算契税
+            calculateDeedTax(area, totalPrice, houseCount) {
+                const areaNum = parseFloat(area);
+                const priceNum = parseFloat(totalPrice) * 10000; // 转换为元
+                let rate = 0;
+                
+                if (houseCount === '1') {
+                    // 首套房：144平以下1%，以上1.5%
+                    rate = areaNum <= 144 ? 0.01 : 0.015;
+                } else if (houseCount === '2') {
+                    // 二套房：144平以下1%，以上2%
+                    rate = areaNum <= 144 ? 0.01 : 0.02;
+                } else {
+                    // 三套及以上：3%
+                    rate = 0.03;
+                }
+                
+                return (priceNum * rate) / 10000; // 转换回万元
+            },
+            
+            // 计算个人所得税
+            calculateIncomeTax(totalPrice, taxTime) {
+                // 满五唯一免征
+                if (taxTime === 'more-than-5') {
+                    return 0;
+                }
+                return totalPrice * 0.01; // 总价的1%
+            },
+            
+            // 计算增值税及附加
+            calculateVAT(totalPrice, taxTime) {
+                // 满二免征
+                if (taxTime === 'more-than-2' || taxTime === 'more-than-5') {
+                    return 0;
+                }
+                return totalPrice * 0.056; // 总价的5.6%
+            },
+            
+            // 计算印花税
+            calculateStampDuty(totalPrice, isEnabled) {
+                return isEnabled ? totalPrice * 0.0005 : 0;
+            },
+            
+            // 计算月供 (等额本息)
+            calculateMonthlyPaymentEqualPrincipalInterest(loanAmount, rate, term) {
+                const monthlyRate = rate / 100 / 12;
+                const months = term * 12;
+                // 贷款金额转换为元计算
+                return (loanAmount * 10000 * (monthlyRate * Math.pow(1 + monthlyRate, months)) 
+                    / (Math.pow(1 + monthlyRate, months) - 1)) / 10000; // 转换回万元
+            },
+            
+            // 计算月供 (等额本金) - 返回首月还款额和每月递减额
+            calculateMonthlyPaymentEqualPrincipal(loanAmount, rate, term) {
+                const months = term * 12;
+                const principalPerMonth = (loanAmount * 10000) / months; // 每月应还本金(元)
+                const monthlyRate = rate / 100 / 12; // 月利率
+                const firstMonthInterest = (loanAmount * 10000) * monthlyRate; // 首月利息(元)
+                const firstMonthPayment = (principalPerMonth + firstMonthInterest) / 10000; // 首月还款额(万元)
+                const monthlyDecrease = principalPerMonth * monthlyRate / 10000; // 每月递减额(万元)
+                
+                return {
+                    firstMonthPayment,
+                    monthlyDecrease,
+                    principalPerMonth: principalPerMonth / 10000 // 转换回万元
+                };
+            },
+            
+            // 计算特定月份的还款额 (等额本金)
+            calculateEqualPrincipalMonthPayment(principalPerMonth, firstMonthPayment, monthlyDecrease, month) {
+                return firstMonthPayment - (month - 1) * monthlyDecrease;
+            },
+            
+            // 计算总利息 (等额本息)
+            calculateTotalInterestEqualPrincipalInterest(loanAmount, monthlyPayment, term) {
+                return (monthlyPayment * 12 * term) - loanAmount;
+            },
+            
+            // 计算总利息 (等额本金)
+            calculateTotalInterestEqualPrincipal(loanAmount, rate, term) {
+                const months = term * 12;
+                const monthlyRate = rate / 100 / 12;
+                // 等额本金总利息公式：(还款月数 + 1) × 贷款本金 × 月利率 ÷ 2
+                return (months + 1) * loanAmount * monthlyRate / 2;
+            },
+            
+            // 计算组合贷款的总利息
+            calculateCombinationLoanInterest(commercialLoan, commercialRate, fundLoan, fundRate, term, method) {
+                if (method === 'equal-principal-interest') {
+                    // 等额本息总利息 = 商业贷款利息 + 公积金贷款利息
+                    const commercialMonthly = this.calculateMonthlyPaymentEqualPrincipalInterest(commercialLoan, commercialRate, term);
+                    const commercialInterest = this.calculateTotalInterestEqualPrincipalInterest(commercialLoan, commercialMonthly, term);
+                    
+                    const fundMonthly = this.calculateMonthlyPaymentEqualPrincipalInterest(fundLoan, fundRate, term);
+                    const fundInterest = this.calculateTotalInterestEqualPrincipalInterest(fundLoan, fundMonthly, term);
+                    
+                    return commercialInterest + fundInterest;
+                } else { // equal-principal
+                    // 等额本金总利息 = 商业贷款利息 + 公积金贷款利息
+                    return this.calculateTotalInterestEqualPrincipal(commercialLoan, commercialRate, term) +
+                           this.calculateTotalInterestEqualPrincipal(fundLoan, fundRate, term);
+                }
+            },
+            
+            // 计算组合贷款的月供
+            calculateCombinationMonthlyPayment(commercialLoan, commercialRate, fundLoan, fundRate, term, month, method) {
+                if (method === 'equal-principal-interest') {
+                    // 等额本息每月还款额 = 商业贷款月供 + 公积金贷款月供
+                    return this.calculateMonthlyPaymentEqualPrincipalInterest(commercialLoan, commercialRate, term) +
+                           this.calculateMonthlyPaymentEqualPrincipalInterest(fundLoan, fundRate, term);
+                } else { // equal-principal
+                    // 等额本金每月还款额 = 商业贷款月供 + 公积金贷款月供
+                    const commercial = this.calculateMonthlyPaymentEqualPrincipal(commercialLoan, commercialRate, term);
+                    const fund = this.calculateMonthlyPaymentEqualPrincipal(fundLoan, fundRate, term);
+                    
+                    if (month === 1) {
+                        return commercial.firstMonthPayment + fund.firstMonthPayment;
+                    } else {
+                        return this.calculateEqualPrincipalMonthPayment(
+                            commercial.principalPerMonth, 
+                            commercial.firstMonthPayment, 
+                            commercial.monthlyDecrease, 
+                            month
+                        ) + this.calculateEqualPrincipalMonthPayment(
+                            fund.principalPerMonth, 
+                            fund.firstMonthPayment, 
+                            fund.monthlyDecrease, 
+                            month
+                        );
+                    }
+                }
+            },
+            
+            // 计算中介服务费用
+            calculateServiceFees(totalPrice, loanType) {
+                // 居间服务费：房屋总价的1.5%
+                const brokerageFee = totalPrice * 0.015;
+                
+                // 贷款服务费：根据贷款类型
+                let loanServiceFee = 0;
+                switch(loanType) {
+                    case 'commercial':
+                        loanServiceFee = 0.3; // 3000元（转换为万元）
+                        break;
+                    case 'fund':
+                        loanServiceFee = 0.4; // 4000元（转换为万元）
+                        break;
+                    case 'combination':
+                        loanServiceFee = 0.5; // 5000元（转换为万元）
+                        break;
+                }
+                
+                return {
+                    brokerageFee,
+                    loanServiceFee,
+                    totalServiceFee: brokerageFee + loanServiceFee
+                };
+            },
+            
+            // 计算公积金最高可贷金额
+            calculateMaxFundLoanAmount(familySize, hasMultipleChildren) {
+                let baseAmount;
+                
+                // 基础贷款金额
+                if (familySize === 'single') {
+                    baseAmount = 75; // 单人75万
+                } else { // couple
+                    baseAmount = 100; // 双人100万
+                }
+                
+                // 二孩及以上增加20%
+                if (hasMultipleChildren) {
+                    return baseAmount * 1.2;
+                }
+                
+                return baseAmount;
+            },
+            
+            // 统一更新DOM
+            updateResults(results) {
+                const resultContainer = document.getElementById('result-container');
+                resultContainer.classList.add('result-loading');
+                
+                // 基本信息
+                document.getElementById('result-community').textContent = results.community || '未填写';
+                document.getElementById('result-area').textContent = results.area ? `${results.area} ㎡` : '-';
+                document.getElementById('result-total-price').textContent = results.totalPrice ? `${results.totalPrice.toFixed(2)} 万元` : '-';
+                document.getElementById('result-unit-price').textContent = results.unitPrice ? formatAmount(results.unitPrice, true) : '-';
+                
+                // 首付和贷款信息
+                document.getElementById('result-down-payment-ratio').textContent = results.downPaymentRatio ? `${results.downPaymentRatio.toFixed(1)}%` : '-';
+                document.getElementById('result-down-payment').textContent = results.downPayment ? formatAmount(results.downPayment) : '-';
+                document.getElementById('result-loan-amount').textContent = results.loanAmount ? formatAmount(results.loanAmount) : '-';
+                document.getElementById('result-loan-term').textContent = `${results.loanTerm} 年`;
+                
+                // 根据贷款类型显示不同的贷款金额和利率信息
+                const isCombination = results.loanType === 'combination';
+                const isFund = results.loanType === 'fund';
+                
+                // 显示/隐藏组合贷款专用字段
+                document.getElementById('result-commercial-amount-container').classList.toggle('hidden', !isCombination);
+                document.getElementById('result-fund-amount-container').classList.toggle('hidden', !isCombination && !isFund);
+                document.getElementById('result-single-rate-container').classList.toggle('hidden', isCombination);
+                document.getElementById('result-commercial-rate-container').classList.toggle('hidden', !isCombination);
+                document.getElementById('result-fund-rate-container').classList.toggle('hidden', !isCombination && !isFund);
+                
+                // 更新组合贷款信息
+                if (isCombination) {
+                    document.getElementById('result-commercial-amount').textContent = results.commercialLoan ? formatAmount(results.commercialLoan) : '-';
+                    document.getElementById('result-fund-amount').textContent = results.fundLoan ? formatAmount(results.fundLoan) : '-';
+                    document.getElementById('result-commercial-rate').textContent = `${results.commercialRate.toFixed(2)}%`;
+                    document.getElementById('result-fund-rate').textContent = `${results.fundRate.toFixed(2)}%`;
+                } else if (isFund) {
+                    document.getElementById('result-fund-amount').textContent = results.fundLoan ? formatAmount(results.fundLoan) : '-';
+                    document.getElementById('result-fund-rate').textContent = `${results.fundRate.toFixed(2)}%`;
+                } else {
+                    document.getElementById('result-interest-rate').textContent = `${results.interestRate.toFixed(2)}%`;
+                }
+                
+                // 更新还款方式对比表格
+                document.getElementById('epi-first-month').textContent = results.epiFirstMonth ? formatAmount(results.epiFirstMonth) : '-';
+                document.getElementById('epi-middle-months').textContent = results.epiMiddleMonths ? formatAmount(results.epiMiddleMonths) : '-';
+                document.getElementById('epi-late-middle-months').textContent = results.epiLateMiddleMonths ? formatAmount(results.epiLateMiddleMonths) : '-';
+                document.getElementById('epi-last-month').textContent = results.epiLastMonth ? formatAmount(results.epiLastMonth) : '-';
+                document.getElementById('epi-total-interest').textContent = results.epiTotalInterest ? formatAmount(results.epiTotalInterest) : '-';
+                
+                document.getElementById('ep-first-month').textContent = results.epFirstMonth ? formatAmount(results.epFirstMonth) : '-';
+                document.getElementById('ep-middle-months').textContent = results.epMiddleMonths ? formatAmount(results.epMiddleMonths) : '-';
+                document.getElementById('ep-late-middle-months').textContent = results.epLateMiddleMonths ? formatAmount(results.epLateMiddleMonths) : '-';
+                document.getElementById('ep-last-month').textContent = results.epLastMonth ? formatAmount(results.epLastMonth) : '-';
+                document.getElementById('ep-total-interest').textContent = results.epTotalInterest ? formatAmount(results.epTotalInterest) : '-';
+                
+                // 利息差额
+                const interestDiff = results.epiTotalInterest - results.epTotalInterest;
+                document.getElementById('interest-difference').textContent = interestDiff ? formatAmount(interestDiff) : '-';
+                
+                // 税费信息
+                document.getElementById('result-tax').textContent = results.deedTax ? formatAmount(results.deedTax) : '-';
+                document.getElementById('result-income-tax').textContent = results.incomeTax ? formatAmount(results.incomeTax) : '-';
+                document.getElementById('result-vat').textContent = results.vat ? formatAmount(results.vat) : '-';
+                document.getElementById('result-registration-fee').textContent = '80 元';
+                document.getElementById('result-stamp-duty').textContent = results.stampDuty ? formatAmount(results.stampDuty) : '0 元';
+                document.getElementById('result-land-fee').textContent = results.landFee ? formatAmount(results.landFee) : '0 元';
+                
+                // 中介服务费用
+                document.getElementById('result-brokerage-fee').textContent = results.brokerageFee ? formatAmount(results.brokerageFee) : '-';
+                document.getElementById('result-loan-service-fee').textContent = results.loanServiceFee ? formatAmount(results.loanServiceFee) : '-';
+                document.getElementById('result-total-service-fee').textContent = results.totalServiceFee ? formatAmount(results.totalServiceFee) : '-';
+                
+                // 总成本信息
+                document.getElementById('result-total-taxes').textContent = results.totalTaxes ? formatAmount(results.totalTaxes) : '-';
+                document.getElementById('result-down-taxes').textContent = results.downTaxes ? formatAmount(results.downTaxes) : '-';
+                document.getElementById('result-epi-total-interest').textContent = results.epiTotalInterest ? formatAmount(results.epiTotalInterest) : '-';
+                document.getElementById('result-ep-total-interest').textContent = results.epTotalInterest ? formatAmount(results.epTotalInterest) : '-';
+                document.getElementById('result-epi-total-cost').textContent = results.epiTotalCost ? formatAmount(results.epiTotalCost) : '-';
+                document.getElementById('result-ep-total-cost').textContent = results.epTotalCost ? formatAmount(results.epTotalCost) : '-';
+                
+                // 移除加载动画
+                setTimeout(() => {
+                    resultContainer.classList.remove('result-loading');
+                    resultContainer.classList.remove('opacity-50');
+                }, 500);
+            }
+        };
+
+        // 初始化贷款年限选项
+        function initLoanTerms() {
+            const loanTermSelect = document.getElementById('loan-term');
+            for (let i = 1; i <= 40; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i}年`;
+                if (i === 30) { // 默认30年
+                    option.selected = true;
+                }
+                loanTermSelect.appendChild(option);
+            }
+        }
+
+        // 初始化首付方式切换
+        function initDownPaymentTypeSwitch() {
+            const ratioRadio = document.querySelector('input[name="down-payment-type"][value="ratio"]');
+            const amountRadio = document.querySelector('input[name="down-payment-type"][value="amount"]');
+            const ratioContainer = document.getElementById('down-payment-ratio-container');
+            const amountContainer = document.getElementById('down-payment-amount-container');
+            const fundHint = document.getElementById('fund-down-payment-hint');
+            
+            // 切换显示
+            function toggleDownPaymentType() {
+                const isRatio = ratioRadio.checked;
+                const loanType = document.getElementById('loan-type').value;
+                const isFund = loanType === 'fund';
+                
+                ratioContainer.classList.toggle('hidden', !isRatio || isFund);
+                amountContainer.classList.toggle('hidden', isRatio || isFund);
+                fundHint.classList.toggle('hidden', !isFund);
+                
+                // 同步值
+                if (!isFund && isRatio && document.getElementById('total-price').value) {
+                    syncAmountFromRatio();
+                } else if (!isFund && !isRatio && document.getElementById('total-price').value) {
+                    syncRatioFromAmount();
+                }
+            }
+            
+            // 从金额同步到比例
+            function syncRatioFromAmount() {
+                const totalPrice = parseFloat(document.getElementById('total-price').value) || 0;
+                const amount = parseFloat(document.getElementById('down-payment-amount').value) || 0;
+                
+                if (totalPrice > 0) {
+                    const ratio = Calculator.calculateDownPaymentRatio(totalPrice, amount);
+                    document.getElementById('down-payment-ratio').value = ratio.toFixed(1);
+                }
+            }
+            
+            // 从比例同步到金额
+            function syncAmountFromRatio() {
+                const totalPrice = parseFloat(document.getElementById('total-price').value) || 0;
+                const ratio = parseFloat(document.getElementById('down-payment-ratio').value) || 0;
+                
+                if (totalPrice > 0) {
+                    const amount = Calculator.calculateDownPaymentAmount(totalPrice, ratio);
+                    document.getElementById('down-payment-amount').value = amount.toFixed(2);
+                }
+            }
+            
+            // 事件监听
+            ratioRadio.addEventListener('change', toggleDownPaymentType);
+            amountRadio.addEventListener('change', toggleDownPaymentType);
+            
+            // 比例变化时同步金额
+            document.getElementById('down-payment-ratio').addEventListener('input', () => {
+                const loanType = document.getElementById('loan-type').value;
+                if (ratioRadio.checked && document.getElementById('total-price').value && loanType !== 'fund') {
+                    syncAmountFromRatio();
+                }
+            });
+            
+            // 金额变化时同步比例
+            document.getElementById('down-payment-amount').addEventListener('input', () => {
+                const loanType = document.getElementById('loan-type').value;
+                if (amountRadio.checked && document.getElementById('total-price').value && loanType !== 'fund') {
+                    syncRatioFromAmount();
+                }
+            });
+            
+            // 总价变化时同步
+            document.getElementById('total-price').addEventListener('input', () => {
+                updateMinDownPaymentInfo();
+                
+                const loanType = document.getElementById('loan-type').value;
+                if (loanType !== 'fund') {
+                    if (ratioRadio.checked) {
+                        syncAmountFromRatio();
+                    } else {
+                        syncRatioFromAmount();
+                    }
+                }
+            });
+            
+            // 贷款类型变化时更新首付信息
+            document.getElementById('loan-type').addEventListener('change', toggleDownPaymentType);
+            
+            // 初始化
+            toggleDownPaymentType();
+        }
+
+        // 验证并同步首付值
+        function validateAndSyncDownPayment() {
+            const loanType = document.getElementById('loan-type').value;
+            const totalPrice = parseFloat(document.getElementById('total-price').value) || 0;
+            const minRatio = Calculator.getMinDownPaymentRatio(loanType);
+            const ratioRadio = document.querySelector('input[name="down-payment-type"][value="ratio"]').checked;
+            
+            // 公积金贷款不验证首付，因为由贷款金额决定
+            if (loanType === 'fund') return;
+            
+            if (ratioRadio) {
+                const currentRatio = parseFloat(document.getElementById('down-payment-ratio').value) || 0;
+                if (currentRatio < minRatio) {
+                    document.getElementById('down-payment-ratio').value = minRatio;
+                }
+                // 同步金额
+                if (totalPrice > 0) {
+                    const amount = Calculator.calculateDownPaymentAmount(totalPrice, parseFloat(document.getElementById('down-payment-ratio').value));
+                    document.getElementById('down-payment-amount').value = amount.toFixed(2);
+                }
+            } else {
+                const minAmount = Calculator.calculateDownPaymentAmount(totalPrice, minRatio);
+                const currentAmount = parseFloat(document.getElementById('down-payment-amount').value) || 0;
+                
+                if (currentAmount < minAmount && totalPrice > 0) {
+                    document.getElementById('down-payment-amount').value = minAmount.toFixed(2);
+                }
+                // 同步比例
+                if (totalPrice > 0) {
+                    const ratio = Calculator.calculateDownPaymentRatio(totalPrice, parseFloat(document.getElementById('down-payment-amount').value));
+                    document.getElementById('down-payment-ratio').value = ratio.toFixed(1);
+                }
+            }
+        }
+
+        // 更新最低首付信息
+        function updateMinDownPaymentInfo() {
+            const loanType = document.getElementById('loan-type').value;
+            const totalPrice = parseFloat(document.getElementById('total-price').value) || 0;
+            const minRatio = Calculator.getMinDownPaymentRatio(loanType);
+            const minAmount = totalPrice > 0 ? Calculator.calculateDownPaymentAmount(totalPrice, minRatio) : 0;
+            
+            // 更新显示的最低首付信息
+            document.getElementById('min-ratio-text').textContent = `(最低${minRatio}%)`;
+            document.getElementById('min-amount-text').textContent = totalPrice > 0 ? 
+                `(最低${minAmount.toFixed(2)}万元)` : '(请先填写房屋总价)';
+            
+            // 更新输入框的最小值属性
+            document.getElementById('down-payment-ratio').min = minRatio;
+            document.getElementById('down-payment-amount').min = minAmount.toFixed(2);
+            
+            // 确保当前值不低于最小值（公积金贷款除外）
+            if (totalPrice > 0 && loanType !== 'fund') {
+                if (parseFloat(document.getElementById('down-payment-ratio').value) < minRatio) {
+                    document.getElementById('down-payment-ratio').value = minRatio;
+                }
+                
+                if (parseFloat(document.getElementById('down-payment-amount').value) < minAmount) {
+                    document.getElementById('down-payment-amount').value = minAmount.toFixed(2);
+                }
+            }
+        }
+
+        // 贷款类型切换
+        function initLoanTypeSwitch() {
+            const loanTypeSelect = document.getElementById('loan-type');
+            const fundOptionsContainer = document.getElementById('fund-options-container');
+            const fundRateContainer = document.getElementById('fund-rate-container');
+            const commercialRateContainer = document.getElementById('commercial-rate-container');
+            
+            function toggleFundOptions() {
+                const isFund = loanTypeSelect.value === 'fund';
+                const isCombination = loanTypeSelect.value === 'combination';
+                const isCommercial = loanTypeSelect.value === 'commercial';
+                
+                // 显示/隐藏公积金选项
+                fundOptionsContainer.classList.toggle('hidden', !isFund && !isCombination);
+                fundRateContainer.classList.toggle('hidden', !isFund && !isCombination);
+                
+                // 显示/隐藏商业贷款选项
+                commercialRateContainer.classList.toggle('hidden', !isCommercial && !isCombination);
+                
+                // 更新首付相关显示
+                initDownPaymentTypeSwitch();
+                updateMinDownPaymentInfo();
+                
+                updateDefaultInterestRate();
+                updateMaxFundLoanAmount(); // 更新最高可贷金额显示
+            }
+            
+            // 确保每次贷款类型变化时都触发完整的更新
+            loanTypeSelect.addEventListener('change', toggleFundOptions);
+            toggleFundOptions(); // 初始化
+        }
+
+        // 更新公积金最高可贷金额显示
+        function updateMaxFundLoanAmount() {
+            const familySize = document.querySelector('input[name="family-size"]:checked').value;
+            const hasMultipleChildren = document.querySelector('input[name="children"][value="multiple"]').checked;
+            const maxAmount = Calculator.calculateMaxFundLoanAmount(familySize, hasMultipleChildren);
+            
+            document.getElementById('fund-max-amount-text').textContent = `(最高可贷: ${maxAmount}万元)`;
+        }
+
+        // 初始化家庭情况选项事件
+        function initFamilyOptions() {
+            // 家庭人数变化时更新最高可贷金额
+            document.querySelectorAll('input[name="family-size"]').forEach(radio => {
+                radio.addEventListener('change', updateMaxFundLoanAmount);
+            });
+            
+            // 子女情况变化时更新最高可贷金额
+            document.querySelectorAll('input[name="children"]').forEach(radio => {
+                radio.addEventListener('change', updateMaxFundLoanAmount);
+            });
+        }
+
+        // 更新默认利率
+        function updateDefaultInterestRate() {
+            const loanType = document.getElementById('loan-type').value;
+            const loanTerm = parseInt(document.getElementById('loan-term').value);
+            const isFirstFund = document.querySelector('input[name="fund-usage"][value="first"]').checked;
+            
+            // 公积金利率逻辑
+            if (loanType === 'fund' || loanType === 'combination') {
+                let rate;
+                if (isFirstFund) {
+                    rate = loanTerm <= 5 ? 2.1 : 2.5;
+                } else {
+                    rate = loanTerm <= 5 ? 2.525 : 3.075;
+                }
+                document.getElementById('fund-rate').value = rate;
+            }
+            
+            // 商业贷款利率默认值
+            if (loanType === 'commercial' || loanType === 'combination') {
+                document.getElementById('commercial-rate').value = 3.15;
+            }
+        }
+
+        // 表单验证
+        function validateForm() {
+            const area = document.getElementById('area').value;
+            const totalPrice = document.getElementById('total-price').value;
+            const loanType = document.getElementById('loan-type').value;
+            const minRatio = Calculator.getMinDownPaymentRatio(loanType);
+            const ratioRadio = document.querySelector('input[name="down-payment-type"][value="ratio"]').checked;
+            
+            let downPaymentValid = true;
+            let message = "";
+            
+            if (!area && !totalPrice) {
+                message = "请填写房屋面积和总价";
+            } else if (!area) {
+                message = "请填写房屋面积";
+            } else if (!totalPrice) {
+                message = "请填写房屋总价";
+            } else if (loanType !== 'fund') {
+                // 验证首付（公积金贷款不验证，因为由贷款金额决定）
+                if (ratioRadio) {
+                    const ratio = parseFloat(document.getElementById('down-payment-ratio').value) || 0;
+                    if (ratio < minRatio) {
+                        downPaymentValid = false;
+                        message = `首付比例不能低于${minRatio}%`;
+                    }
+                } else {
+                    const amount = parseFloat(document.getElementById('down-payment-amount').value) || 0;
+                    const minAmount = Calculator.calculateDownPaymentAmount(parseFloat(totalPrice), minRatio);
+                    if (amount < minAmount) {
+                        downPaymentValid = false;
+                        message = `首付金额不能低于${minAmount.toFixed(2)}万元`;
+                    }
+                }
+            } else {
+                // 公积金贷款验证：确保最高可贷金额不超过房屋总价
+                const familySize = document.querySelector('input[name="family-size"]:checked').value;
+                const hasMultipleChildren = document.querySelector('input[name="children"][value="multiple"]').checked;
+                const maxFundLoanAmount = Calculator.calculateMaxFundLoanAmount(familySize, hasMultipleChildren);
+                const fundLoanAmountInput = document.getElementById('fund-loan-amount').value;
+                const actualFundLoan = fundLoanAmountInput ? parseFloat(fundLoanAmountInput) : maxFundLoanAmount;
+                
+                if (actualFundLoan > parseFloat(totalPrice)) {
+                    downPaymentValid = false;
+                    message = "公积金贷款金额不能超过房屋总价";
+                }
+            }
+            
+            const messageEl = document.getElementById('validation-message');
+            if (message) {
+                messageEl.textContent = message;
+                messageEl.classList.remove('hidden');
+                return false;
+            }
+            
+            messageEl.classList.add('hidden');
+            return true;
+        }
+
+        // 计算购房成本
+        function calculateCost() {
+            if (!validateForm()) {
+                return;
+            }
+            
+            // 收集表单数据
+            const community = document.getElementById('community-name').value;
+            const area = parseFloat(document.getElementById('area').value);
+            const totalPrice = parseFloat(document.getElementById('total-price').value);
+            const loanType = document.getElementById('loan-type').value;
+            const loanTerm = parseInt(document.getElementById('loan-term').value);
+            const houseCount = document.getElementById('house-count').value;
+            const landFeeYes = document.querySelector('input[name="land-fee"][value="yes"]').checked;
+            const stampDutyYes = document.querySelector('input[name="stamp-duty-option"][value="yes"]').checked;
+            
+            // 确定首付比例和金额
+            let downPaymentRatio, downPayment;
+            const ratioRadio = document.querySelector('input[name="down-payment-type"][value="ratio"]').checked;
+            
+            if (loanType !== 'fund') {
+                // 非公积金贷款：使用用户输入的首付比例或金额
+                if (ratioRadio) {
+                    downPaymentRatio = parseFloat(document.getElementById('down-payment-ratio').value);
+                    downPayment = Calculator.calculateDownPaymentAmount(totalPrice, downPaymentRatio);
+                } else {
+                    downPayment = parseFloat(document.getElementById('down-payment-amount').value);
+                    downPaymentRatio = Calculator.calculateDownPaymentRatio(totalPrice, downPayment);
+                }
+                
+                // 验证并确保首付不低于最低要求
+                const minRatio = Calculator.getMinDownPaymentRatio(loanType);
+                if (downPaymentRatio < minRatio) {
+                    downPaymentRatio = minRatio;
+                    downPayment = Calculator.calculateDownPaymentAmount(totalPrice, downPaymentRatio);
+                    // 更新UI显示正确的首付值
+                    document.getElementById('down-payment-ratio').value = downPaymentRatio;
+                    document.getElementById('down-payment-amount').value = downPayment.toFixed(2);
+                }
+            }
+            
+            // 公积金相关数据
+            const familySize = document.querySelector('input[name="family-size"]:checked').value;
+            const hasMultipleChildren = document.querySelector('input[name="children"][value="multiple"]').checked;
+            const fundLoanAmountInput = document.getElementById('fund-loan-amount').value;
+            const maxFundLoanAmount = Calculator.calculateMaxFundLoanAmount(familySize, hasMultipleChildren);
+            
+            // 计算公积金贷款金额（未填写则使用最高可贷金额）
+            let fundLoanAmount = 0;
+            if (loanType === 'fund' || loanType === 'combination') {
+                fundLoanAmount = fundLoanAmountInput ? parseFloat(fundLoanAmountInput) : maxFundLoanAmount;
+            }
+            
+            // 计算贷款金额
+            const loanAmounts = Calculator.calculateLoanAmounts(
+                loanType, 
+                totalPrice, 
+                downPayment, 
+                fundLoanAmount, 
+                maxFundLoanAmount
+            );
+            
+            // 公积金贷款情况下更新首付信息
+            if (loanType === 'fund') {
+                downPayment = loanAmounts.actualDownPayment;
+                downPaymentRatio = loanAmounts.downPaymentRatio;
+            }
+            
+            // 获取利率
+            let commercialRate = 0;
+            let fundRate = 0;
+            let interestRate = 0;
+            
+            if (loanType === 'commercial') {
+                commercialRate = parseFloat(document.getElementById('commercial-rate').value);
+                interestRate = commercialRate;
+            } else if (loanType === 'fund') {
+                fundRate = parseFloat(document.getElementById('fund-rate').value);
+                interestRate = fundRate;
+            } else { // 组合贷款
+                commercialRate = parseFloat(document.getElementById('commercial-rate').value);
+                fundRate = parseFloat(document.getElementById('fund-rate').value);
+            }
+            
+            // 计算两种还款方式的月供和总利息
+            let epiFirstMonth = 0, epiMiddleMonths = 0, epiLateMiddleMonths = 0, epiLastMonth = 0, epiTotalInterest = 0;
+            let epFirstMonth = 0, epMiddleMonths = 0, epLateMiddleMonths = 0, epLastMonth = 0, epTotalInterest = 0;
+            const totalMonths = loanTerm * 12;
+            
+            if (loanAmounts.totalLoan > 0) {
+                // 等额本息计算
+                if (loanType === 'combination') {
+                    // 组合贷款等额本息
+                    epiFirstMonth = Calculator.calculateCombinationMonthlyPayment(
+                        loanAmounts.commercialLoan, commercialRate, 
+                        loanAmounts.fundLoan, fundRate, 
+                        loanTerm, 1, 'equal-principal-interest'
+                    );
+                    
+                    // 等额本息每月还款额相同
+                    epiMiddleMonths = epiFirstMonth;
+                    epiLateMiddleMonths = epiFirstMonth;
+                    epiLastMonth = epiFirstMonth;
+                    
+                    // 总利息
+                    epiTotalInterest = Calculator.calculateCombinationLoanInterest(
+                        loanAmounts.commercialLoan, commercialRate, 
+                        loanAmounts.fundLoan, fundRate, 
+                        loanTerm, 'equal-principal-interest'
+                    );
+                } else {
+                    // 商业或公积金贷款等额本息
+                    const monthlyPayment = Calculator.calculateMonthlyPaymentEqualPrincipalInterest(
+                        loanAmounts.totalLoan, interestRate, loanTerm
+                    );
+                    
+                    epiFirstMonth = monthlyPayment;
+                    epiMiddleMonths = epiFirstMonth;
+                    epiLateMiddleMonths = epiFirstMonth;
+                    epiLastMonth = epiFirstMonth;
+                    
+                    epiTotalInterest = Calculator.calculateTotalInterestEqualPrincipalInterest(
+                        loanAmounts.totalLoan, monthlyPayment, loanTerm
+                    );
+                }
+                
+                // 等额本金计算
+                if (loanType === 'combination') {
+                    // 组合贷款等额本金
+                    epFirstMonth = Calculator.calculateCombinationMonthlyPayment(
+                        loanAmounts.commercialLoan, commercialRate, 
+                        loanAmounts.fundLoan, fundRate, 
+                        loanTerm, 1, 'equal-principal'
+                    );
+                    
+                    // 第2-12期（取第12期）
+                    epMiddleMonths = Calculator.calculateCombinationMonthlyPayment(
+                        loanAmounts.commercialLoan, commercialRate, 
+                        loanAmounts.fundLoan, fundRate, 
+                        loanTerm, 12, 'equal-principal'
+                    );
+                    
+                    // 倒数第12-2期（取倒数第12期）
+                    const lateMonth = totalMonths - 12;
+                    epLateMiddleMonths = Calculator.calculateCombinationMonthlyPayment(
+                        loanAmounts.commercialLoan, commercialRate, 
+                        loanAmounts.fundLoan, fundRate, 
+                        loanTerm, lateMonth, 'equal-principal'
+                    );
+                    
+                    // 最后一期
+                    epLastMonth = Calculator.calculateCombinationMonthlyPayment(
+                        loanAmounts.commercialLoan, commercialRate, 
+                        loanAmounts.fundLoan, fundRate, 
+                        loanTerm, totalMonths, 'equal-principal'
+                    );
+                    
+                    // 总利息
+                    epTotalInterest = Calculator.calculateCombinationLoanInterest(
+                        loanAmounts.commercialLoan, commercialRate, 
+                        loanAmounts.fundLoan, fundRate, 
+                        loanTerm, 'equal-principal'
+                    );
+                } else {
+                    // 商业或公积金贷款等额本金
+                    const epData = Calculator.calculateMonthlyPaymentEqualPrincipal(
+                        loanAmounts.totalLoan, interestRate, loanTerm
+                    );
+                    
+                    epFirstMonth = epData.firstMonthPayment;
+                    
+                    // 第2-12期（取第12期）
+                    epMiddleMonths = Calculator.calculateEqualPrincipalMonthPayment(
+                        epData.principalPerMonth, epData.firstMonthPayment, 
+                        epData.monthlyDecrease, 12
+                    );
+                    
+                    // 倒数第12-2期（取倒数第12期）
+                    const lateMonth = totalMonths - 12;
+                    epLateMiddleMonths = Calculator.calculateEqualPrincipalMonthPayment(
+                        epData.principalPerMonth, epData.firstMonthPayment, 
+                        epData.monthlyDecrease, lateMonth
+                    );
+                    
+                    // 最后一期
+                    epLastMonth = Calculator.calculateEqualPrincipalMonthPayment(
+                        epData.principalPerMonth, epData.firstMonthPayment, 
+                        epData.monthlyDecrease, totalMonths
+                    );
+                    
+                    epTotalInterest = Calculator.calculateTotalInterestEqualPrincipal(
+                        loanAmounts.totalLoan, interestRate, loanTerm
+                    );
+                }
+            }
+            
+            // 计算各项费用
+            const deedTax = Calculator.calculateDeedTax(area, totalPrice, houseCount);
+            const incomeTax = Calculator.calculateIncomeTax(totalPrice, document.querySelector('input[name="tax-time"]:checked').value);
+            const vat = Calculator.calculateVAT(totalPrice, document.querySelector('input[name="tax-time"]:checked').value);
+            const registrationFee = 80; // 80元，固定值
+            const landFee = landFeeYes ? totalPrice * 0.01 : 0; // 土地出让金为总价的1%
+            const stampDuty = Calculator.calculateStampDuty(totalPrice, stampDutyYes); // 印花税为总价的0.05%
+            
+            // 计算中介服务费用
+            const serviceFees = Calculator.calculateServiceFees(totalPrice, loanType);
+            
+            // 计算总成本
+            const totalTaxes = deedTax + incomeTax + vat + (registrationFee / 10000) + stampDuty + landFee;
+            const downTaxes = downPayment + totalTaxes + serviceFees.totalServiceFee;
+            
+            // 购房总成本（含不同还款方式的利息）
+            const epiTotalCost = totalPrice + totalTaxes + serviceFees.totalServiceFee + epiTotalInterest;
+            const epTotalCost = totalPrice + totalTaxes + serviceFees.totalServiceFee + epTotalInterest;
+            
+            // 计算单价（元/㎡）
+            const unitPrice = totalPrice * 10000 / area;
+            
+            // 整理结果
+            const results = {
+                community,
+                area,
+                totalPrice,
+                unitPrice,
+                downPaymentRatio,
+                downPayment,
+                loanAmount: loanAmounts.totalLoan,
+                commercialLoan: loanAmounts.commercialLoan,
+                fundLoan: loanAmounts.fundLoan,
+                loanTerm,
+                loanType,
+                interestRate,
+                commercialRate,
+                fundRate,
+                
+                // 等额本息
+                epiFirstMonth,
+                epiMiddleMonths,
+                epiLateMiddleMonths,
+                epiLastMonth,
+                epiTotalInterest,
+                
+                // 等额本金
+                epFirstMonth,
+                epMiddleMonths,
+                epLateMiddleMonths,
+                epLastMonth,
+                epTotalInterest,
+                
+                deedTax,
+                incomeTax,
+                vat,
+                registrationFee,
+                stampDuty,
+                landFee,
+                ...serviceFees, // 中介服务费用
+                totalTaxes,
+                downTaxes,
+                epiTotalCost,
+                epTotalCost
+            };
+            
+            // 更新结果显示
+            Calculator.updateResults(results);
+            
+            // 保存记录
+            saveToLocalStorage(results);
+            renderHistory();
+        }
+
+        // 防抖函数
+        let debounceTimer;
+        function debounceCalculate() {
+            clearTimeout(debounceTimer);
+            
+            debounceTimer = setTimeout(() => {
+                if (validateForm() && document.getElementById('realtime-calculation').checked) {
+                    calculateCost();
+                }
+            }, 500);
+        }
+
+        // 初始化实时计算
+        function initRealtimeCalculation() {
+            const inputs = [
+                'area', 'total-price', 'down-payment-ratio', 'down-payment-amount', 
+                'loan-type', 'loan-term', 'house-count', 'fund-loan-amount',
+                'commercial-rate', 'fund-rate'
+            ];
+            
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', debounceCalculate);
+                    el.addEventListener('change', debounceCalculate);
+                }
+            });
+            
+            // 监听单选按钮变化
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', debounceCalculate);
+            });
+        }
+
+        // 生成图片
+        function initImageGeneration() {
+            document.getElementById('generate-image').addEventListener('click', () => {
+                if (!validateForm()) {
+                    return;
+                }
+                
+                const target = document.getElementById('screenshot-target');
+                html2canvas(target, {
+                    scale: 2, // 提升清晰度
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: null
+                }).then(canvas => {
+                    // 创建图片链接
+                    const imgData = canvas.toDataURL('image/png');
+                    
+                    // 创建下载链接
+                    const link = document.createElement('a');
+                    link.download = '购房成本计算结果.png';
+                    link.href = imgData;
+                    link.click();
+                }).catch(err => {
+                    alert('图片生成失败，请重试');
+                    console.error('截图失败:', err);
+                });
+            });
+        }
+
+        // 复制分享链接
+        function initCopyLink() {
+            document.getElementById('copy-link').addEventListener('click', () => {
+                if (!validateForm()) {
+                    return;
+                }
+                
+                const params = new URLSearchParams();
+                
+                // 收集表单参数
+                params.append('community', document.getElementById('community-name').value || '');
+                params.append('area', document.getElementById('area').value || '');
+                params.append('price', document.getElementById('total-price').value || '');
+                params.append('downType', document.querySelector('input[name="down-payment-type"]:checked').value);
+                params.append('downRatio', document.getElementById('down-payment-ratio').value);
+                params.append('downAmount', document.getElementById('down-payment-amount').value);
+                params.append('taxTime', document.querySelector('input[name="tax-time"]:checked').value);
+                params.append('loanType', document.getElementById('loan-type').value);
+                params.append('loanTerm', document.getElementById('loan-term').value);
+                params.append('houseCount', document.getElementById('house-count').value);
+                params.append('landFee', document.querySelector('input[name="land-fee"]:checked').value);
+                params.append('stampDuty', document.querySelector('input[name="stamp-duty-option"]:checked').value);
+                params.append('commercialRate', document.getElementById('commercial-rate').value);
+                params.append('fundRate', document.getElementById('fund-rate').value);
+                
+                // 公积金相关参数
+                const fundUsage = document.querySelector('input[name="fund-usage"]:checked')?.value;
+                if (fundUsage) params.append('fundUsage', fundUsage);
+                
+                const familySize = document.querySelector('input[name="family-size"]:checked')?.value;
+                if (familySize) params.append('familySize', familySize);
+                
+                const children = document.querySelector('input[name="children"]:checked')?.value;
+                if (children) params.append('children', children);
+                
+                const fundLoanAmount = document.getElementById('fund-loan-amount').value;
+                if (fundLoanAmount) params.append('fundLoanAmount', fundLoanAmount);
+                
+                // 构建分享链接
+                const shareUrl = window.location.origin + window.location.pathname + '?' + params.toString();
+                
+                // 复制到剪贴板
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('链接已复制到剪贴板，可以分享给他人了');
+                }).catch(err => {
+                    alert('复制失败，请手动复制链接: ' + shareUrl);
+                    console.error('复制失败:', err);
+                });
+            });
+        }
+
+        // 重置表单
+        function initResetForm() {
+            document.getElementById('reset-form').addEventListener('click', () => {
+                if (confirm('确定要重置表单吗？当前输入将被清空')) {
+                    document.getElementById('calculator-form').reset();
+                    
+                    // 重置显示结果
+                    const resultElements = document.querySelectorAll('#result-container p');
+                    resultElements.forEach(el => {
+                        el.textContent = '-';
+                    });
+                    
+                    // 重置贷款类型相关显示
+                    initLoanTypeSwitch();
+                    updateMaxFundLoanAmount();
+                    
+                    // 重置首付相关
+                    document.getElementById('result-container').classList.add('opacity-50');
+                    initDownPaymentTypeSwitch();
+                }
+            });
+        }
+
+        // 数据持久化 - 保存记录
+        function saveToLocalStorage(results) {
+            const formData = {
+                community: results.community,
+                area: results.area,
+                totalPrice: results.totalPrice,
+                downPaymentRatio: results.downPaymentRatio,
+                timestamp: new Date().getTime()
+            };
+            
+            const history = JSON.parse(localStorage.getItem('calculatorHistory') || '[]');
+            history.unshift(formData); // 最新记录放前面
+            if (history.length > 3) history.pop(); // 保留最近3条
+            localStorage.setItem('calculatorHistory', JSON.stringify(history));
+        }
+
+        // 渲染历史记录
+        function renderHistory() {
+            const historyContainer = document.getElementById('history-container');
+            const history = JSON.parse(localStorage.getItem('calculatorHistory') || '[]');
+            
+            if (history.length === 0) {
+                historyContainer.innerHTML = '<p class="text-gray-500 italic text-xs">暂无计算记录</p>';
+                return;
+            }
+            
+            let html = '';
+            history.forEach((item, index) => {
+                const date = new Date(item.timestamp);
+                const formattedDate = `${date.getMonth() + 1}月${date.getDate()}日 ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+                
+                html += `
+                    <div class="flex items-center justify-between p-2 border-b border-gray-100 last:border-0">
+                        <div>
+                            <p class="text-gray-700">${item.community || '未命名'} ${item.area}㎡ ${item.totalPrice}万元</p>
+                            <p class="text-gray-500 text-xs">${formattedDate} 首付${item.downPaymentRatio.toFixed(1)}%</p>
+                        </div>
+                        <button class="text-primary text-xs" onclick="loadHistoryItem(${index})">
+                            <i class="fa fa-refresh mr-1"></i>重新计算
+                        </button>
+                    </div>
+                `;
+            });
+            
+            historyContainer.innerHTML = html;
+        }
+
+        // 加载历史记录
+        function loadHistoryItem(index) {
+            const history = JSON.parse(localStorage.getItem('calculatorHistory') || '[]');
+            if (index >= 0 && index < history.length) {
+                const item = history[index];
+                document.getElementById('community-name').value = item.community || '';
+                document.getElementById('area').value = item.area || '';
+                document.getElementById('total-price').value = item.totalPrice || '';
+                document.getElementById('down-payment-ratio').value = item.downPaymentRatio || 30;
+                
+                // 触发计算
+                initDownPaymentTypeSwitch();
+                calculateCost();
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化贷款年限选项
+            initLoanTerms();
+            
+            // 初始化首付方式切换
+            initDownPaymentTypeSwitch();
+            
+            // 初始化贷款类型切换
+            initLoanTypeSwitch();
+            
+            // 初始化家庭情况选项事件
+            initFamilyOptions();
+            
+            // 初始化计算按钮
+            document.getElementById('calculate-btn').addEventListener('click', calculateCost);
+            document.getElementById('calculate-float-btn').addEventListener('click', calculateCost);
+            
+            // 初始化实时计算
+            initRealtimeCalculation();
+            
+            // 初始化图片生成
+            initImageGeneration();
+            
+            // 初始化复制链接
+            initCopyLink();
+            
+            // 初始化重置表单
+            initResetForm();
+            
+            // 渲染历史记录
+            renderHistory();
+            
+            // 尝试从URL参数加载数据
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('price')) {
+                // 有参数，尝试加载
+                document.getElementById('community-name').value = params.get('community') || '';
+                document.getElementById('area').value = params.get('area') || '';
+                document.getElementById('total-price').value = params.get('price') || '';
+                
+                const downType = params.get('downType');
+                if (downType) {
+                    document.querySelector(`input[name="down-payment-type"][value="${downType}"]`).checked = true;
+                }
+                
+                document.getElementById('down-payment-ratio').value = params.get('downRatio') || 30;
+                document.getElementById('down-payment-amount').value = params.get('downAmount') || '';
+                
+                const taxTime = params.get('taxTime');
+                if (taxTime) {
+                    document.querySelector(`input[name="tax-time"][value="${taxTime}"]`).checked = true;
+                }
+                
+                const loanType = params.get('loanType');
+                if (loanType) {
+                    document.getElementById('loan-type').value = loanType;
+                }
+                
+                document.getElementById('loan-term').value = params.get('loanTerm') || 30;
+                document.getElementById('house-count').value = params.get('houseCount') || 1;
+                
+                const landFee = params.get('landFee');
+                if (landFee) {
+                    document.querySelector(`input[name="land-fee"][value="${landFee}"]`).checked = true;
+                }
+                
+                const stampDuty = params.get('stampDuty');
+                if (stampDuty) {
+                    document.querySelector(`input[name="stamp-duty-option"][value="${stampDuty}"]`).checked = true;
+                }
+                
+                document.getElementById('commercial-rate').value = params.get('commercialRate') || 3.15;
+                document.getElementById('fund-rate').value = params.get('fundRate') || 2.5;
+                
+                const fundUsage = params.get('fundUsage');
+                if (fundUsage) {
+                    document.querySelector(`input[name="fund-usage"][value="${fundUsage}"]`).checked = true;
+                }
+                
+                const familySize = params.get('familySize');
+                if (familySize) {
+                    document.querySelector(`input[name="family-size"][value="${familySize}"]`).checked = true;
+                }
+                
+                const children = params.get('children');
+                if (children) {
+                    document.querySelector(`input[name="children"][value="${children}"]`).checked = true;
+                }
+                
+                const fundLoanAmount = params.get('fundLoanAmount');
+                if (fundLoanAmount) {
+                    document.getElementById('fund-loan-amount').value = fundLoanAmount;
+                }
+                
+                // 触发UI更新和计算
+                initLoanTypeSwitch();
+                initDownPaymentTypeSwitch();
+                updateMaxFundLoanAmount();
+                
+                // 自动计算
+                setTimeout(calculateCost, 500);
+            }
+        });
+    </script>
+</body>
+</html>
+    
