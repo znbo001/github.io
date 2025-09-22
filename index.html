@@ -594,7 +594,7 @@
                             <div class="bg-neutral rounded-md p-3">
                                 <div class="flex items-center">
                                     <h3 class="text-xs text-gray-500 mb-1">契税</h3>
-                                    <span class="ml-1 text-primary cursor-help" title="首套144平以下1%，以上1.5%；二套144平以下1%，以上2%；三套及以上3%">
+                                    <span class="ml-1 text-primary cursor-help" title="首套140平及以下1%，以上1.5%；二套140平及以下1%，以上2%；三套及以上3%">
                                         <i class="fa fa-question-circle"></i>
                                     </span>
                                 </div>
@@ -884,11 +884,11 @@
                 let rate = 0;
                 
                 if (houseCount === '1') {
-                    // 首套房：144平以下1%，以上1.5%
-                    rate = areaNum <= 144 ? 0.01 : 0.015;
+                    // 首套房：140平以下1%，以上1.5%
+                    rate = areaNum <= 140 ? 0.01 : 0.015;
                 } else if (houseCount === '2') {
-                    // 二套房：144平以下1%，以上2%
-                    rate = areaNum <= 144 ? 0.01 : 0.02;
+                    // 二套房：140平以下1%，以上2%
+                    rate = areaNum <= 140 ? 0.01 : 0.02;
                 } else {
                     // 三套及以上：3%
                     rate = 0.03;
