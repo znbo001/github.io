@@ -24,7 +24,6 @@
                         // 值班人员专属颜色
                         person1: '#E6F0FF',      // 陈琛 - 浅蓝
                         person2: '#D4F4E1',      // 李义宗 - 浅绿
-                        person3: '#FFF9E6',      // 张俊博 - 浅黄
                         person4: '#FFE6E6',      // 赵予 - 浅红
                         person5: '#F5E6FF',      // 张宁勃 - 浅紫
                         person6: '#FFE6F2',      // 杨虎 - 浅粉
@@ -151,7 +150,7 @@
                     <p class="text-sm text-gray-600">当前显示：<span id="status-month" class="font-medium text-darkText"></span></p>
                 </div>
                 <div class="flex items-center space-x-1 text-sm text-gray-500">
-                    <span><i class="fa fa-clock-o mr-1"></i> 最后更新：2025年9月</span>
+                    <span><i class="fa fa-clock-o mr-1"></i> 最后更新：2025年10月</span>
                 </div>
             </div>
         </div>
@@ -233,25 +232,24 @@
             </div>
             <div class="border-t border-gray-700 mt-6 pt-6 text-center text-sm text-gray-400">
                 <p>&copy; <span id="current-year"></span> 值班安排管理系统 | 设计与开发</p>
-                <p class="mt-1">最后更新: 2025年9月</p>
+                <p class="mt-1">最后更新: 2025年10月</p>
             </div>
         </div>
     </footer>
 
     <script>
-        // 值班人员数据
+        // 值班人员数据（已剔除张俊博）
         const personnel = [
             { name: "陈琛", color: "person1" },
             { name: "李义宗", color: "person2" },
-            { name: "张俊博", color: "person3" },
             { name: "赵予", color: "person4" },
             { name: "张宁勃", color: "person5" },
             { name: "杨虎", color: "person6" },
             { name: "张慧杰", color: "person7" }
         ];
         
-        // 基准日期：2025年9月17日（星期三）
-        const firstDutyDate = new Date(2025, 8, 17);
+        // 基准日期：2025年10月19日（杨虎值班）
+        const baseDate = new Date(2025, 9, 19);
         let currentDisplayMonth = new Date();
         
         // DOM元素缓存
@@ -336,7 +334,7 @@
             dom.currentDateDisplay.textContent = new Date().toLocaleDateString('zh-CN', options);
         }
         
-        // 渲染日历 - 丰富UI版本
+        // 渲染日历
         function renderCalendar(date) {
             const year = date.getFullYear();
             const month = date.getMonth();
@@ -388,7 +386,7 @@
                 if (isPast) dateCell.classList.add('calendar-day-past');
                 
                 // 获取当天的值班人员
-                const dutyPersons = getDutyPersons(currentDate);
+                const dutyPerson = getDutyPerson(currentDate);
                 
                 // 构建单元格内容
                 dateCell.innerHTML = `
@@ -399,9 +397,9 @@
                         </span>
                     </div>
                     <div class="duty-persons space-y-2 mt-1">
-                        ${dutyPersons.length > 0 ? dutyPersons.map(person => `
-                            <div class="person-badge bg-${person.color}">${person.name}</div>
-                        `).join('') : '<div class="text-gray-400 text-xs italic text-center py-3">暂无安排</div>'}
+                        ${dutyPerson ? `
+                            <div class="person-badge bg-${dutyPerson.color}">${dutyPerson.name}</div>
+                        ` : '<div class="text-gray-400 text-xs italic text-center py-3">暂无安排</div>'}
                     </div>
                 `;
                 
@@ -418,30 +416,34 @@
             dom.calendarGrid.appendChild(fragment);
         }
         
-        // 获取值班人员
-        function getDutyPersons(date) {
-            const timeDiff = date.getTime() - firstDutyDate.getTime();
+        // 获取值班人员（根据新规则）
+        function getDutyPerson(date) {
+            // 计算与基准日期的差值（天）
+            const timeDiff = date.getTime() - baseDate.getTime();
             const dayDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
             
-            // 优化后的7天周期
-            const dutyCycleIndexes = [
-                [0, 3],   // 周三：陈琛, 赵予
-                [1, 4],   // 周四：李义宗, 张宁勃
-                [2, 5],   // 周五：张俊博, 杨虎
-                [3, 6],   // 周六：赵予, 张慧杰
-                [4, 0],   // 周日：张宁勃, 陈琛
-                [6, 2],   // 周一：张慧杰, 张俊博（固定组合）
-                [5, 1]    // 周二：杨虎, 李义宗
-            ];
+            // 对于基准日期之前的日期，返回null
+            if (dayDiff < 0) return null;
             
-            // 对于基准日期之前的日期，返回空数组
-            if (dayDiff < 0) return [];
+            // 获取星期几（0=周日，1=周一，...，6=周六）
+            const dayOfWeek = date.getDay();
             
-            // 计算周期中的位置
-            const cyclePos = (dayDiff % 7 + 7) % 7;
+            // 周一固定张慧杰（索引5）
+            if (dayOfWeek === 1) {
+                return personnel[5];
+            }
             
-            // 返回对应的人员信息
-            return dutyCycleIndexes[cyclePos].map(index => personnel[index]);
+            // 其他日期的轮换顺序：陈琛(0) → 李义宗(1) → 赵予(2) → 张宁勃(3) → 杨虎(4) → 陈琛(0)...
+            // 基准日(10月19日，周日)是杨虎(4)，计算偏移量
+            const cycleLength = 5; // 轮换周期长度
+            const baseIndex = 4; // 基准日的值班人员索引（杨虎）
+            const adjustedDiff = dayDiff - (dayOfWeek === 0 ? 0 : 1); // 减去周一的天数
+            const cycleIndex = (baseIndex + adjustedDiff) % cycleLength;
+            
+            // 确保索引为正数
+            const normalizedIndex = (cycleIndex + cycleLength) % cycleLength;
+            
+            return personnel[normalizedIndex];
         }
         
         // 显示今天和明天的值班人员
@@ -455,14 +457,14 @@
             todayEl.textContent = `今日值班 (${formatDate(today)})`;
             
             // 显示今天的值班人员
-            const todayPersons = getDutyPersons(today);
-            dom.todayDuty.innerHTML = todayPersons.length > 0 ? 
-                todayPersons.map(person => `
-                    <div class="person-badge bg-${person.color} flex items-center justify-center">
-                        <span class="inline-block w-3 h-3 rounded-full bg-${person.color}-700/30 mr-2"></span>
-                        ${person.name}
-                    </div>
-                `).join('') : 
+            const todayPerson = getDutyPerson(today);
+            dom.todayDuty.innerHTML = todayPerson ? 
+                `
+                <div class="person-badge bg-${todayPerson.color} flex items-center justify-center">
+                    <span class="inline-block w-3 h-3 rounded-full bg-${todayPerson.color}-700/30 mr-2"></span>
+                    ${todayPerson.name}
+                </div>
+                ` : 
                 '<div class="text-gray-400 italic text-center py-3">暂无安排</div>';
             
             // 显示明天的日期
@@ -470,14 +472,14 @@
             tomorrowEl.textContent = `明日值班 (${formatDate(tomorrow)})`;
             
             // 显示明天的值班人员
-            const tomorrowPersons = getDutyPersons(tomorrow);
-            dom.tomorrowDuty.innerHTML = tomorrowPersons.length > 0 ? 
-                tomorrowPersons.map(person => `
-                    <div class="person-badge bg-${person.color} flex items-center justify-center">
-                        <span class="inline-block w-3 h-3 rounded-full bg-${person.color}-700/30 mr-2"></span>
-                        ${person.name}
-                    </div>
-                `).join('') : 
+            const tomorrowPerson = getDutyPerson(tomorrow);
+            dom.tomorrowDuty.innerHTML = tomorrowPerson ? 
+                `
+                <div class="person-badge bg-${tomorrowPerson.color} flex items-center justify-center">
+                    <span class="inline-block w-3 h-3 rounded-full bg-${tomorrowPerson.color}-700/30 mr-2"></span>
+                    ${tomorrowPerson.name}
+                </div>
+                ` : 
                 '<div class="text-gray-400 italic text-center py-3">暂无安排</div>';
         }
         
@@ -488,4 +490,3 @@
     </script>
 </body>
 </html>
-    
