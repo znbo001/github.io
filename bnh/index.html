@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>月度值班表（精准匹配版）</title>
+    <title>月度值班表</title>
     <!-- 引入完整Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入完整Font Awesome -->
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     
-    <!-- Tailwind 配置 -->
+    <!-- Tailwind配置 -->
     <script>
         tailwind.config = {
             theme: {
@@ -17,7 +17,7 @@
                     colors: {
                         primary: '#4F86F7',      // 主色调：蓝色
                         secondary: '#32CD32',    // 辅助色：绿色
-                        accent: '#FFC107',       // 强调色：黄色（基准日标记）
+                        accent: '#FFC107',       // 强调色：黄色
                         neutral: '#F8F9FA',      // 中性色：浅灰
                         darkText: '#2C3E50',     // 深色文字
                         // 值班人员专属颜色
@@ -68,7 +68,6 @@
             .calendar-day-past { @apply opacity-80; }
             .calendar-day-weekend { @apply bg-gray-50; }
             .calendar-day-monday { @apply bg-blue-50; }
-            .calendar-day-base { @apply ring-2 ring-accent/50 bg-accent/5; } /* 10月29日基准日 */
         }
     </style>
 </head>
@@ -97,18 +96,18 @@
 
     <!-- 主内容区 -->
     <main class="container mx-auto px-4 py-6 sm:py-10">
-        <!-- 系统状态卡片：明确匹配示例规则 -->
+        <!-- 系统状态卡片 -->
         <div class="mb-6 bg-gradient-to-r from-primary/5 to-accent/5 p-4 rounded-2xl border border-primary/10">
             <div class="flex flex-col sm:flex-row justify-between items-center">
                 <div class="flex items-center space-x-2 mb-3 sm:mb-0">
                     <i class="fa fa-info-circle text-primary text-lg"></i>
                     <p class="text-sm text-gray-600">
                         当前显示：<span id="status-month" class="font-medium text-darkText"></span> | 
-                        规则：张慧杰固定周一，非周一按「赵予→张宁勃→杨虎→陈琛」循环（基准日10月29日赵予）
+                        规则：张慧杰固定周一，非周一按「赵予→张宁勃→杨虎→陈琛」循环
                     </p>
                 </div>
                 <div class="flex items-center space-x-1 text-sm text-gray-500">
-                    <span><i class="fa fa-clock-o mr-1"></i> 最后更新：2025年10月28日</span>
+                    <span><i class="fa fa-clock-o mr-1"></i> 最后更新：<span id="last-update"></span></span>
                 </div>
             </div>
         </div>
@@ -132,20 +131,17 @@
                 </div>
                 <h3 class="font-semibold mb-3 flex items-center text-darkText">
                     <i class="fa fa-sun-o text-primary mr-2"></i>
-                    <span>10月28日 今日值班</span>
+                    <span id="today-date">今日值班</span>
                 </h3>
                 <div class="duty-persons space-y-2 mt-2 relative z-10"></div>
             </div>
             <div id="tomorrow-duty" class="bg-white p-4 rounded-2xl shadow-card hover-lift border-t-4 border-accent relative">
-                <div class="absolute top-2 right-2 bg-accent/20 text-accent text-xs px-2 py-1 rounded-full font-medium">
-                    基准日
-                </div>
                 <div class="absolute top-0 right-0 w-24 h-24 opacity-5">
                     <i class="fa fa-moon-o text-9xl text-accent"></i>
                 </div>
                 <h3 class="font-semibold mb-3 flex items-center text-darkText">
                     <i class="fa fa-moon-o text-accent mr-2"></i>
-                    <span>10月29日 明日值班</span>
+                    <span id="tomorrow-date">明日值班</span>
                 </h3>
                 <div class="duty-persons space-y-2 mt-2 relative z-10"></div>
             </div>
@@ -154,7 +150,7 @@
         <!-- 日历网格 -->
         <div class="calendar-container bg-white rounded-2xl shadow-card overflow-hidden hover-lift">
             <div class="calendar-inner">
-                <!-- 星期标题：明确规则 -->
+                <!-- 星期标题 -->
                 <div class="grid grid-cols-7 border-b bg-neutral">
                     <div class="p-3 text-center font-semibold text-gray-500">周日（循环）</div>
                     <div class="p-3 text-center font-semibold text-primary bg-blue-50/50">周一（张慧杰固定）</div>
@@ -171,13 +167,13 @@
         </div>
     </main>
 
-    <!-- 页脚：匹配示例规则 -->
+    <!-- 页脚 -->
     <footer class="bg-gray-800 text-gray-300 py-8 mt-12">
         <div class="container mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="mb-4 md:mb-0">
                     <p class="text-lg font-medium mb-1">值班安排管理系统</p>
-                    <p class="text-sm text-gray-400">10月基准日：29日（赵予）| 非周一循环顺序：赵予→张宁勃→杨虎→陈琛</p>
+                    <p class="text-sm text-gray-400">非周一循环顺序：赵予→张宁勃→杨虎→陈琛 | 周一固定：张慧杰</p>
                 </div>
                 <div class="flex space-x-6">
                     <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
@@ -192,25 +188,33 @@
                 </div>
             </div>
             <div class="border-t border-gray-700 mt-6 pt-6 text-center text-sm text-gray-400">
-                <p>&copy; 2025 值班安排管理系统 | 完全匹配示例日期安排</p>
+                <p>&copy; <span id="current-year"></span> 值班安排管理系统 | 动态更新日期与值班人员</p>
             </div>
         </div>
     </footer>
 
     <script>
-        // 值班人员数据（与示例严格匹配）
+        // 值班人员数据
         const personnel = [
-            { name: "赵予", color: "person4" },    // 循环索引0（基准日）
+            { name: "赵予", color: "person4" },    // 循环索引0
             { name: "张宁勃", color: "person5" },  // 循环索引1
             { name: "杨虎", color: "person6" },    // 循环索引2
             { name: "陈琛", color: "person1" },    // 循环索引3
             { name: "张慧杰", color: "person7" }   // 固定周一
         ];
         
-        // 基准日期：10月29日（赵予，非周一）
-        const baseDate = new Date(2025, 9, 29); // 9=10月
-        const today = new Date(2025, 9, 28);    // 今天10月28日
-        let currentDisplayMonth = new Date(2025, 9, 1); // 默认显示10月
+        // 基准日期（仅作为计算参考，不在界面显示）
+        const baseDate = new Date(2025, 9, 29); // 10月29日，仅用于计算循环起点
+        
+        // 动态获取当前日期
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // 计算明日日期
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        
+        let currentDisplayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         
         // DOM元素缓存
         const dom = {
@@ -220,15 +224,24 @@
             currentDateDisplay: document.getElementById('current-date-display'),
             todayDuty: document.querySelector('#today-duty .duty-persons'),
             tomorrowDuty: document.querySelector('#tomorrow-duty .duty-persons'),
+            todayDate: document.getElementById('today-date'),
+            tomorrowDate: document.getElementById('tomorrow-date'),
             prevMonth: document.getElementById('prev-month'),
             nextMonth: document.getElementById('next-month'),
-            todayBtn: document.getElementById('today-btn')
+            todayBtn: document.getElementById('today-btn'),
+            lastUpdate: document.getElementById('last-update'),
+            currentYear: document.getElementById('current-year')
         };
         
         // 初始化页面
         document.addEventListener('DOMContentLoaded', () => {
-            dom.currentDateDisplay.textContent = "2025年10月28日 星期二";
+            // 更新当前日期显示
+            updateDateDisplay();
+            
+            // 初始化日历
             renderCalendar(currentDisplayMonth);
+            
+            // 显示今天和明天的值班人员
             displayTodayAndTomorrowDuty();
             
             // 事件监听
@@ -241,16 +254,38 @@
                 playButtonEffect(dom.nextMonth);
             });
             dom.todayBtn.addEventListener('click', () => {
-                currentDisplayMonth = new Date(2025, 9, 1);
+                currentDisplayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
                 renderCalendar(currentDisplayMonth);
                 playButtonEffect(dom.todayBtn);
             });
+            
+            // 设置自动刷新（每小时）
+            setInterval(() => {
+                const newToday = new Date();
+                newToday.setHours(0, 0, 0, 0);
+                if (newToday.getTime() !== today.getTime()) {
+                    location.reload();
+                }
+            }, 3600000);
         });
         
         // 按钮点击效果
         function playButtonEffect(button) {
             button.classList.add('scale-95');
             setTimeout(() => button.classList.remove('scale-95'), 150);
+        }
+        
+        // 更新日期显示
+        function updateDateDisplay() {
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            dom.currentDateDisplay.textContent = today.toLocaleDateString('zh-CN', options);
+            
+            const shortOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            dom.todayDate.textContent = `${today.toLocaleDateString('zh-CN', shortOptions)} 今日值班`;
+            dom.tomorrowDate.textContent = `${tomorrow.toLocaleDateString('zh-CN', shortOptions)} 明日值班`;
+            
+            dom.currentYear.textContent = new Date().getFullYear();
+            dom.lastUpdate.textContent = new Date().toLocaleString('zh-CN');
         }
         
         // 导航月份
@@ -291,8 +326,7 @@
                 const currentDate = new Date(year, month, day);
                 const dayOfWeek = currentDate.getDay();
                 const isToday = currentDate.toDateString() === today.toDateString();
-                const isBaseDay = currentDate.toDateString() === baseDate.toDateString();
-                const isPast = currentDate < new Date(today.setHours(0, 0, 0, 0));
+                const isPast = currentDate < today;
                 const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                 const isMonday = dayOfWeek === 1;
                 
@@ -302,17 +336,9 @@
                 if (isWeekend) dateCell.classList.add('calendar-day-weekend');
                 if (isToday) dateCell.classList.add('calendar-day-today');
                 if (isPast) dateCell.classList.add('calendar-day-past');
-                if (isBaseDay) dateCell.classList.add('calendar-day-base');
-                
-                const baseDayBadge = isBaseDay ? `
-                    <div class="absolute top-2 right-2 bg-accent/20 text-accent text-xs px-2 py-1 rounded-full font-medium">
-                        基准日
-                    </div>
-                ` : '';
                 
                 const dutyPerson = getDutyPerson(currentDate);
                 dateCell.innerHTML = `
-                    ${baseDayBadge}
                     <div class="flex justify-between items-center mb-3">
                         <span class="${isToday ? 'text-primary font-bold' : 'text-darkText'}">${day}</span>
                         <span class="text-xs text-gray-500 px-2 py-0.5 rounded-full bg-gray-100">
@@ -332,17 +358,16 @@
             dom.calendarGrid.appendChild(fragment);
         }
         
-        // 核心逻辑：计算非周一日期的循环索引（完全匹配示例）
+        // 计算值班人员（基准日仅作为计算参考）
         function getDutyPerson(date) {
             const dayOfWeek = date.getDay();
             
-            // 1. 周一固定张慧杰（示例中11/3、11/10均为周一，匹配）
+            // 周一固定张慧杰
             if (dayOfWeek === 1) {
                 return personnel[4]; // 张慧杰
             }
             
-            // 2. 非周一：按「赵予→张宁勃→杨虎→陈琛」循环，基于基准日计算
-            // 计算从基准日到目标日期的"非周一天数差"（跳过所有周一）
+            // 非周一：按「赵予→张宁勃→杨虎→陈琛」循环
             const nonMondayDiff = calculateNonMondayDiff(baseDate, date);
             
             // 循环序列：[赵予(0), 张宁勃(1), 杨虎(2), 陈琛(3)]
@@ -350,7 +375,7 @@
             return personnel[cycleIndex];
         }
         
-        // 辅助函数：计算两个日期之间的非周一天数（核心修正点）
+        // 计算两个日期之间的非周一天数
         function calculateNonMondayDiff(startDate, targetDate) {
             let diff = 0;
             const tempDate = new Date(startDate);
@@ -377,41 +402,14 @@
             return diff;
         }
         
-        // 验证示例日期（确保完全匹配）
-        function verifyExampleDates() {
-            const examples = [
-                { date: new Date(2025,9,29), expect: "赵予" },
-                { date: new Date(2025,9,30), expect: "张宁勃" },
-                { date: new Date(2025,9,31), expect: "杨虎" },
-                { date: new Date(2025,10,1), expect: "陈琛" },
-                { date: new Date(2025,10,2), expect: "赵予" },
-                { date: new Date(2025,10,3), expect: "张慧杰" },
-                { date: new Date(2025,10,4), expect: "张宁勃" },
-                { date: new Date(2025,10,5), expect: "杨虎" },
-                { date: new Date(2025,10,6), expect: "陈琛" },
-                { date: new Date(2025,10,7), expect: "赵予" },
-                { date: new Date(2025,10,8), expect: "张宁勃" },
-                { date: new Date(2025,10,9), expect: "杨虎" },
-                { date: new Date(2025,10,10), expect: "张慧杰" },
-                { date: new Date(2025,10,11), expect: "陈琛" }
-            ];
-            
-            examples.forEach(item => {
-                const result = getDutyPerson(item.date).name;
-                console.log(`${item.date.toLocaleDateString()} 验证：${result === item.expect ? '通过' : '失败'}（实际：${result}，预期：${item.expect}）`);
-            });
-        }
-        // 控制台验证（可删除）
-        verifyExampleDates();
-        
-        // 显示今日和明日值班
+        // 显示今日和明日值班人员
         function displayTodayAndTomorrowDuty() {
-            // 今日（10/28，非周一）：根据基准日计算（基准日前1个非周一，对应陈琛）
+            // 今日值班人员
             const todayPerson = getDutyPerson(today);
             dom.todayDuty.innerHTML = `<div class="person-badge bg-${todayPerson.color}">${todayPerson.name}</div>`;
             
-            // 明日（10/29，基准日）：赵予
-            const tomorrowPerson = getDutyPerson(baseDate);
+            // 明日值班人员
+            const tomorrowPerson = getDutyPerson(tomorrow);
             dom.tomorrowDuty.innerHTML = `<div class="person-badge bg-${tomorrowPerson.color}">${tomorrowPerson.name}</div>`;
         }
     </script>
