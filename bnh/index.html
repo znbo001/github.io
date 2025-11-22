@@ -3,415 +3,347 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>月度值班表</title>
-    <!-- 引入完整Tailwind CSS -->
+    <title>全新值班安排管理系统</title>
+    <!-- 引入外部资源 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入完整Font Awesome -->
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     
-    <!-- Tailwind配置 -->
+    <!-- Tailwind CSS 配置 -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#4F86F7',      // 主色调：蓝色
-                        secondary: '#32CD32',    // 辅助色：绿色
-                        accent: '#FFC107',       // 强调色：黄色
-                        neutral: '#F8F9FA',      // 中性色：浅灰
-                        darkText: '#2C3E50',     // 深色文字
-                        // 值班人员专属颜色
-                        person1: '#E6F0FF',      // 陈琛 - 浅蓝
-                        person5: '#F5E6FF',      // 张宁勃 - 浅紫
-                        person6: '#FFE6F2',      // 杨虎 - 浅粉
-                        person7: '#E6FBFF',      // 张慧杰 - 浅青
-                        person4: '#FFE6E6',      // 赵予 - 浅红
+                        primary: '#3B82F6',    // 主色调：蓝色
+                        secondary: '#F59E0B',  // 辅助色：橙色
+                        'shift-morning': '#DBEAFE', // 早班背景色
+                        'shift-afternoon': '#FDE68A', // 晚班背景色
                     },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
                     },
-                    boxShadow: {
-                        'card': '0 4px 20px rgba(0, 0, 0, 0.05)',
-                        'badge': '0 2px 8px rgba(0, 0, 0, 0.08)',
-                    }
                 }
             }
         }
     </script>
     
+    <!-- 自定义工具类 -->
     <style type="text/tailwindcss">
         @layer utilities {
             .content-auto { content-visibility: auto; }
-            .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
-            .hover-lift:hover { transform: translateY(-2px); }
-            .person-badge { 
-                @apply w-full px-3 py-2 rounded-lg text-darkText text-sm font-medium 
-                       block shadow-badge text-center transition-all duration-300;
-            }
-            .calendar-day { 
-                @apply p-3 border-b border-r transition-all duration-300 hover:bg-neutral 
-                       relative overflow-hidden min-h-[110px];
-            }
-            .calendar-day::after {
-                content: '';
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 3px;
-                background: transparent;
-                transition: background 0.3s ease;
-            }
-            .calendar-day:hover::after { background: theme('colors.primary'); }
-            .calendar-day-today { @apply bg-primary/10 border-primary/30 ring-1 ring-primary font-medium; }
-            .calendar-day-today::after { background: theme('colors.primary'); }
-            .calendar-day-past { @apply opacity-80; }
-            .calendar-day-weekend { @apply bg-gray-50; }
-            .calendar-day-monday { @apply bg-blue-50; }
+            .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+            .calendar-day-hover { transition: all 0.2s ease-in-out; }
+            .calendar-day-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         }
     </style>
 </head>
-<body class="bg-gray-50 font-sans text-darkText min-h-screen">
-    <!-- 顶部导航栏 -->
-    <header class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="bg-primary/10 p-3 rounded-xl">
-                    <i class="fa fa-calendar-check-o text-primary text-2xl"></i>
-                </div>
-                <h1 class="text-xl sm:text-2xl font-bold text-darkText">值班安排管理系统</h1>
-            </div>
-            <div class="flex items-center space-x-4">
-                <div class="hidden sm:flex items-center space-x-2 bg-neutral/50 px-3 py-2 rounded-full">
-                    <i class="fa fa-calendar text-primary"></i>
-                    <span class="text-gray-600 text-sm" id="current-date-display"></span>
-                </div>
-                <button id="today-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-all duration-300 flex items-center shadow-md">
-                    <i class="fa fa-home mr-2"></i>
-                    <span>今日视图</span>
-                </button>
-            </div>
-        </div>
-    </header>
+<body class="bg-gray-50 font-sans text-gray-800 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- 页面标题 -->
+        <header class="mb-8 text-center">
+            <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-gray-900 mb-2">值班安排管理系统</h1>
+            <p class="text-gray-600">高效管理团队值班，一目了然</p>
+        </header>
 
-    <!-- 主内容区 -->
-    <main class="container mx-auto px-4 py-6 sm:py-10">
-        <!-- 系统状态卡片 -->
-        <div class="mb-6 bg-gradient-to-r from-primary/5 to-accent/5 p-4 rounded-2xl border border-primary/10">
-            <div class="flex flex-col sm:flex-row justify-between items-center">
-                <div class="flex items-center space-x-2 mb-3 sm:mb-0">
-                    <i class="fa fa-info-circle text-primary text-lg"></i>
-                    <p class="text-sm text-gray-600">
-                        当前显示：<span id="status-month" class="font-medium text-darkText"></span> | 
-                        规则：张慧杰固定周一，非周一按「赵予→张宁勃→杨虎→陈琛」循环
-                    </p>
+        <!-- 主要内容区 -->
+        <main class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <!-- 侧边栏：今日/明日值班信息 -->
+            <aside class="md:col-span-1">
+                <div class="bg-white rounded-xl card-shadow p-6 sticky top-6">
+                    <h2 class="text-xl font-bold mb-6 pb-3 border-b border-gray-200">近期值班</h2>
+                    
+                    <!-- 今日值班和明日值班 - 横向布局 -->
+                    <div class="flex flex-row gap-4">
+                        <!-- 今日值班 -->
+                        <div id="today-duty" class="flex-1 min-w-0">
+                            <div class="flex items-center mb-3">
+                                <i class="fa fa-sun-o text-primary text-xl mr-2"></i>
+                                <h3 class="text-lg font-semibold">今日值班</h3>
+                            </div>
+                            <div id="today-duty-content" class="space-y-2">
+                                <!-- 内容由JS动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 明日值班 -->
+                        <div id="tomorrow-duty" class="flex-1 min-w-0">
+                            <div class="flex items-center mb-3">
+                                <i class="fa fa-moon-o text-secondary text-xl mr-2"></i>
+                                <h3 class="text-lg font-semibold">明日值班</h3>
+                            </div>
+                            <div id="tomorrow-duty-content" class="space-y-2">
+                                <!-- 内容由JS动态生成 -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex items-center space-x-1 text-sm text-gray-500">
-                    <span><i class="fa fa-clock-o mr-1"></i> 最后更新：<span id="last-update"></span></span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 月份导航 -->
-        <div class="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-card hover-lift">
-            <button id="prev-month" class="p-3 rounded-full hover:bg-neutral transition-all duration-300">
-                <i class="fa fa-chevron-left text-gray-600 text-lg"></i>
-            </button>
-            <h2 id="current-month" class="text-xl sm:text-2xl font-bold text-darkText"></h2>
-            <button id="next-month" class="p-3 rounded-full hover:bg-neutral transition-all duration-300">
-                <i class="fa fa-chevron-right text-gray-600 text-lg"></i>
-            </button>
-        </div>
-        
-        <!-- 今日及明日值班提示 -->
-        <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div id="today-duty" class="bg-white p-4 rounded-2xl shadow-card hover-lift border-t-4 border-primary relative">
-                <div class="absolute top-0 right-0 w-24 h-24 opacity-5">
-                    <i class="fa fa-sun-o text-9xl text-primary"></i>
-                </div>
-                <h3 class="font-semibold mb-3 flex items-center text-darkText">
-                    <i class="fa fa-sun-o text-primary mr-2"></i>
-                    <span id="today-date">今日值班</span>
-                </h3>
-                <div class="duty-persons space-y-2 mt-2 relative z-10"></div>
-            </div>
-            <div id="tomorrow-duty" class="bg-white p-4 rounded-2xl shadow-card hover-lift border-t-4 border-accent relative">
-                <div class="absolute top-0 right-0 w-24 h-24 opacity-5">
-                    <i class="fa fa-moon-o text-9xl text-accent"></i>
-                </div>
-                <h3 class="font-semibold mb-3 flex items-center text-darkText">
-                    <i class="fa fa-moon-o text-accent mr-2"></i>
-                    <span id="tomorrow-date">明日值班</span>
-                </h3>
-                <div class="duty-persons space-y-2 mt-2 relative z-10"></div>
-            </div>
-        </div>
-        
-        <!-- 日历网格 -->
-        <div class="calendar-container bg-white rounded-2xl shadow-card overflow-hidden hover-lift">
-            <div class="calendar-inner">
-                <!-- 星期标题 -->
-                <div class="grid grid-cols-7 border-b bg-neutral">
-                    <div class="p-3 text-center font-semibold text-gray-500">周日（循环）</div>
-                    <div class="p-3 text-center font-semibold text-primary bg-blue-50/50">周一（张慧杰固定）</div>
-                    <div class="p-3 text-center font-semibold text-gray-500">周二（循环）</div>
-                    <div class="p-3 text-center font-semibold text-gray-500">周三（循环）</div>
-                    <div class="p-3 text-center font-semibold text-gray-500">周四（循环）</div>
-                    <div class="p-3 text-center font-semibold text-gray-500">周五（循环）</div>
-                    <div class="p-3 text-center font-semibold text-gray-500">周六（循环）</div>
-                </div>
-                
-                <!-- 日历单元格 -->
-                <div id="calendar-grid" class="grid grid-cols-7 auto-rows-fr"></div>
-            </div>
-        </div>
-    </main>
+            </aside>
 
-    <!-- 页脚 -->
-    <footer class="bg-gray-800 text-gray-300 py-8 mt-12">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <p class="text-lg font-medium mb-1">值班安排管理系统</p>
-                    <p class="text-sm text-gray-400">非周一循环顺序：赵予→张宁勃→杨虎→陈琛 | 周一固定：张慧杰</p>
-                </div>
-                <div class="flex space-x-6">
-                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
-                        <i class="fa fa-question-circle mr-1"></i>帮助中心
-                    </a>
-                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
-                        <i class="fa fa-cog mr-1"></i>系统设置
-                    </a>
-                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
-                        <i class="fa fa-envelope mr-1"></i>联系我们
-                    </a>
+            <!-- 主区域：日历 -->
+            <div class="md:col-span-3">
+                <div class="bg-white rounded-xl card-shadow p-6">
+                    <!-- 日历头部：月份导航 -->
+                    <div class="flex justify-between items-center mb-6">
+                        <button id="prev-month" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                            <i class="fa fa-chevron-left text-lg"></i>
+                        </button>
+                        <h2 id="current-month-display" class="text-2xl font-bold">2025年11月</h2>
+                        <button id="next-month" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                            <i class="fa fa-chevron-right text-lg"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- 日历星期标题 -->
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div class="text-center font-semibold text-gray-500 py-2">周日</div>
+                        <div class="text-center font-semibold text-primary py-2 bg-blue-50">周一</div>
+                        <div class="text-center font-semibold text-gray-500 py-2">周二</div>
+                        <div class="text-center font-semibold text-gray-500 py-2">周三</div>
+                        <div class="text-center font-semibold text-gray-500 py-2">周四</div>
+                        <div class="text-center font-semibold text-gray-500 py-2">周五</div>
+                        <div class="text-center font-semibold text-gray-500 py-2">周六</div>
+                    </div>
+                    
+                    <!-- 日历网格 -->
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1">
+                        <!-- 日历单元格由JS动态生成 -->
+                    </div>
                 </div>
             </div>
-            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-sm text-gray-400">
-                <p>&copy; <span id="current-year"></span> 值班安排管理系统 | 动态更新日期与值班人员</p>
-            </div>
-        </div>
-    </footer>
+        </main>
+
+        <!-- 页脚 -->
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>© 2025 值班安排管理系统 | 最后更新: <span id="last-updated">2025年11月22日 12:00</span></p>
+        </footer>
+    </div>
 
     <script>
-        // 值班人员数据
-        const personnel = [
-            { name: "赵予", color: "person4" },    // 循环索引0
-            { name: "张宁勃", color: "person5" },  // 循环索引1
-            { name: "杨虎", color: "person6" },    // 循环索引2
-            { name: "陈琛", color: "person1" },    // 循环索引3
-            { name: "张慧杰", color: "person7" }   // 固定周一
+        // 1. 业务数据与配置
+        // 值班顺序：赵予 → 张宁勃 → 刘倚石 → 陈琛 → 薛春梅&徐斌
+        const DUTY_ROSTER = [
+            { name: "赵予", color: "bg-blue-100 text-blue-800" },
+            { name: "张宁勃", color: "bg-purple-100 text-purple-800" },
+            { name: "刘倚石", color: "bg-green-100 text-green-800" },
+            { name: "陈琛", color: "bg-yellow-100 text-yellow-800" },
+            { 
+                name: "薛春梅", 
+                color: "bg-red-100 text-red-800",
+                isPair: true,
+                pairName: "徐斌",
+                pairColor: "bg-indigo-100 text-indigo-800"
+            }
         ];
-        
-        // 基准日期（仅作为计算参考，不在界面显示）
-        const baseDate = new Date(2025, 9, 29); // 10月29日，仅用于计算循环起点
-        
-        // 动态获取当前日期
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        // 计算明日日期
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
-        
-        let currentDisplayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        
-        // DOM元素缓存
-        const dom = {
+        const FIXED_PERSON_FOR_MONDAY = { name: "张慧杰", color: "bg-primary/10 text-primary" };
+        // 参考日期：2025年11月25日，已知值班人员为刘倚石 (索引为 2)
+        const REFERENCE_DATE = new Date(2025, 10, 25); // 10 代表 11月
+
+        // 2. 全局状态
+        let currentDate = new Date();
+        let currentMonth = currentDate.getMonth();
+        let currentYear = currentDate.getFullYear();
+
+        // 3. DOM 元素
+        const elements = {
             calendarGrid: document.getElementById('calendar-grid'),
-            currentMonth: document.getElementById('current-month'),
-            statusMonth: document.getElementById('status-month'),
-            currentDateDisplay: document.getElementById('current-date-display'),
-            todayDuty: document.querySelector('#today-duty .duty-persons'),
-            tomorrowDuty: document.querySelector('#tomorrow-duty .duty-persons'),
-            todayDate: document.getElementById('today-date'),
-            tomorrowDate: document.getElementById('tomorrow-date'),
-            prevMonth: document.getElementById('prev-month'),
-            nextMonth: document.getElementById('next-month'),
-            todayBtn: document.getElementById('today-btn'),
-            lastUpdate: document.getElementById('last-update'),
-            currentYear: document.getElementById('current-year')
+            currentMonthDisplay: document.getElementById('current-month-display'),
+            prevMonthBtn: document.getElementById('prev-month'),
+            nextMonthBtn: document.getElementById('next-month'),
+            todayDutyContent: document.getElementById('today-duty-content'),
+            tomorrowDutyContent: document.getElementById('tomorrow-duty-content'),
+            lastUpdated: document.getElementById('last-updated')
         };
-        
-        // 初始化页面
-        document.addEventListener('DOMContentLoaded', () => {
-            // 更新当前日期显示
-            updateDateDisplay();
-            
-            // 初始化日历
-            renderCalendar(currentDisplayMonth);
-            
-            // 显示今天和明天的值班人员
-            displayTodayAndTomorrowDuty();
-            
-            // 事件监听
-            dom.prevMonth.addEventListener('click', () => {
-                navigateMonth(-1);
-                playButtonEffect(dom.prevMonth);
-            });
-            dom.nextMonth.addEventListener('click', () => {
-                navigateMonth(1);
-                playButtonEffect(dom.nextMonth);
-            });
-            dom.todayBtn.addEventListener('click', () => {
-                currentDisplayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                renderCalendar(currentDisplayMonth);
-                playButtonEffect(dom.todayBtn);
-            });
-            
-            // 设置自动刷新（每小时）
-            setInterval(() => {
-                const newToday = new Date();
-                newToday.setHours(0, 0, 0, 0);
-                if (newToday.getTime() !== today.getTime()) {
-                    location.reload();
+
+        // 4. 工具函数
+        /**
+         * 计算两个日期之间的非周一的天数差
+         * @param {Date} startDate - 开始日期
+         * @param {Date} endDate - 结束日期
+         * @returns {number} - 天数差，如果endDate在startDate之前，返回负数
+         */
+        function getNonMondayDayDifference(startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            start.setHours(0, 0, 0, 0);
+            end.setHours(0, 0, 0, 0);
+
+            let diffDays = 0;
+            const direction = end > start ? 1 : -1;
+
+            while (start.getTime() !== end.getTime()) {
+                start.setDate(start.getDate() + direction);
+                if (start.getDay() !== 1) { // 跳过周一
+                    diffDays += direction;
                 }
-            }, 3600000);
-        });
-        
-        // 按钮点击效果
-        function playButtonEffect(button) {
-            button.classList.add('scale-95');
-            setTimeout(() => button.classList.remove('scale-95'), 150);
-        }
-        
-        // 更新日期显示
-        function updateDateDisplay() {
-            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-            dom.currentDateDisplay.textContent = today.toLocaleDateString('zh-CN', options);
-            
-            const shortOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-            dom.todayDate.textContent = `${today.toLocaleDateString('zh-CN', shortOptions)} 今日值班`;
-            dom.tomorrowDate.textContent = `${tomorrow.toLocaleDateString('zh-CN', shortOptions)} 明日值班`;
-            
-            dom.currentYear.textContent = new Date().getFullYear();
-            dom.lastUpdate.textContent = new Date().toLocaleString('zh-CN');
-        }
-        
-        // 导航月份
-        function navigateMonth(direction) {
-            currentDisplayMonth = new Date(
-                currentDisplayMonth.getFullYear(),
-                currentDisplayMonth.getMonth() + direction,
-                1
-            );
-            renderCalendar(currentDisplayMonth);
-        }
-        
-        // 渲染日历
-        function renderCalendar(date) {
-            const year = date.getFullYear();
-            const month = date.getMonth();
-            const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", 
-                               "七月", "八月", "九月", "十月", "十一月", "十二月"];
-            
-            const monthTitle = `${year}年 ${monthNames[month]}`;
-            dom.currentMonth.textContent = monthTitle;
-            dom.statusMonth.textContent = monthTitle;
-            
-            dom.calendarGrid.innerHTML = '';
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const fragment = document.createDocumentFragment();
-            
-            // 添加上月占位
-            for (let i = 0; i < firstDay; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.className = 'p-3 border-b border-r bg-gray-50 opacity-50';
-                fragment.appendChild(emptyCell);
             }
-            
-            // 添加当月日期
-            for (let day = 1; day <= daysInMonth; day++) {
-                const currentDate = new Date(year, month, day);
-                const dayOfWeek = currentDate.getDay();
-                const isToday = currentDate.toDateString() === today.toDateString();
-                const isPast = currentDate < today;
-                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                const isMonday = dayOfWeek === 1;
-                
-                const dateCell = document.createElement('div');
-                dateCell.className = 'calendar-day';
-                if (isMonday) dateCell.classList.add('calendar-day-monday');
-                if (isWeekend) dateCell.classList.add('calendar-day-weekend');
-                if (isToday) dateCell.classList.add('calendar-day-today');
-                if (isPast) dateCell.classList.add('calendar-day-past');
-                
-                const dutyPerson = getDutyPerson(currentDate);
-                dateCell.innerHTML = `
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="${isToday ? 'text-primary font-bold' : 'text-darkText'}">${day}</span>
-                        <span class="text-xs text-gray-500 px-2 py-0.5 rounded-full bg-gray-100">
-                            ${['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dayOfWeek]}
-                        </span>
-                    </div>
-                    <div class="duty-persons space-y-2 mt-1">
-                        ${dutyPerson ? `
-                            <div class="person-badge bg-${dutyPerson.color}">${dutyPerson.name}</div>
-                        ` : '<div class="text-gray-400 text-xs italic text-center py-3">暂无安排</div>'}
-                    </div>
-                `;
-                
-                fragment.appendChild(dateCell);
-            }
-            
-            dom.calendarGrid.appendChild(fragment);
+            return diffDays;
         }
         
-        // 计算值班人员（基准日仅作为计算参考）
+        /**
+         * 获取指定日期的值班人员
+         * @param {Date} date - 指定日期
+         * @returns {Object} - 值班人员信息
+         */
         function getDutyPerson(date) {
-            const dayOfWeek = date.getDay();
-            
+            const day = date.getDay();
+
             // 周一固定张慧杰
-            if (dayOfWeek === 1) {
-                return personnel[4]; // 张慧杰
+            if (day === 1) {
+                return FIXED_PERSON_FOR_MONDAY;
             }
             
-            // 非周一：按「赵予→张宁勃→杨虎→陈琛」循环
-            const nonMondayDiff = calculateNonMondayDiff(baseDate, date);
+            // 计算从参考日期到目标日期的非周一的天数差
+            const diff = getNonMondayDayDifference(REFERENCE_DATE, date);
             
-            // 循环序列：[赵予(0), 张宁勃(1), 杨虎(2), 陈琛(3)]
-            const cycleIndex = ((nonMondayDiff % 4) + 4) % 4; // 处理负数
-            return personnel[cycleIndex];
+            // 刘倚石在值班列表中的索引为 2
+            const referenceIndex = 2; 
+            
+            // 根据差值计算目标索引，确保循环正确
+            let targetIndex = (referenceIndex + diff) % DUTY_ROSTER.length;
+            
+            // 处理负数索引的情况
+            if (targetIndex < 0) {
+                targetIndex += DUTY_ROSTER.length;
+            }
+
+            return DUTY_ROSTER[targetIndex];
         }
-        
-        // 计算两个日期之间的非周一天数
-        function calculateNonMondayDiff(startDate, targetDate) {
-            let diff = 0;
-            const tempDate = new Date(startDate);
-            const isFuture = targetDate > startDate;
+
+        /**
+         * 渲染单个日历单元格
+         * @param {number} day - 日期
+         * @param {number} month - 月份 (0-11)
+         * @param {number} year - 年份
+         * @param {boolean} isCurrentMonth - 是否是当前显示的月份
+         */
+        function renderCalendarCell(day, month, year, isCurrentMonth) {
+            const cell = document.createElement('div');
+            const date = new Date(year, month, day);
+            const isToday = date.toDateString() === new Date().toDateString();
+            const dutyPerson = getDutyPerson(date);
+
+            let cellClasses = "rounded-lg p-2 min-h-[120px] calendar-day-hover border ";
+            if (!isCurrentMonth) cellClasses += "bg-gray-50 text-gray-400 border-gray-200";
+            else if (date.getDay() === 0) cellClasses += "border-gray-200"; // 周日
+            else if (date.getDay() === 1) cellClasses += "border-primary/20 bg-blue-50"; // 周一
+            else cellClasses += "border-gray-200";
             
-            // 正向计算（未来日期）
-            if (isFuture) {
-                while (tempDate < targetDate) {
-                    tempDate.setDate(tempDate.getDate() + 1);
-                    if (tempDate.getDay() !== 1) { // 跳过周一
-                        diff++;
-                    }
-                }
-            } 
-            // 反向计算（过去日期）
-            else {
-                while (tempDate > targetDate) {
-                    tempDate.setDate(tempDate.getDate() - 1);
-                    if (tempDate.getDay() !== 1) { // 跳过周一
-                        diff--;
-                    }
+            if (isToday) cellClasses += " ring-2 ring-primary";
+
+            cell.className = cellClasses;
+
+            let cellContent = `<div class="text-right text-lg font-bold mb-2 ${isToday ? 'text-primary' : ''}">${day}</div>`;
+            
+            if (dutyPerson) {
+                if (dutyPerson.isPair) {
+                    cellContent += `
+                        <div class="text-sm font-medium p-1 rounded ${dutyPerson.color} mb-1">
+                            ${dutyPerson.name} <span class="text-xs font-normal bg-white/50 rounded-full px-1 ml-1">早到</span>
+                        </div>
+                        <div class="text-sm font-medium p-1 rounded ${dutyPerson.pairColor}">
+                            ${dutyPerson.pairName} <span class="text-xs font-normal bg-white/50 rounded-full px-1 ml-1">晚走</span>
+                        </div>
+                    `;
+                } else {
+                    cellContent += `
+                        <div class="text-sm font-medium p-1 rounded ${dutyPerson.color}">
+                            ${dutyPerson.name}
+                        </div>
+                    `;
                 }
             }
-            return diff;
+
+            cell.innerHTML = cellContent;
+            return cell;
         }
-        
-        // 显示今日和明日值班人员
-        function displayTodayAndTomorrowDuty() {
-            // 今日值班人员
-            const todayPerson = getDutyPerson(today);
-            dom.todayDuty.innerHTML = `<div class="person-badge bg-${todayPerson.color}">${todayPerson.name}</div>`;
-            
-            // 明日值班人员
-            const tomorrowPerson = getDutyPerson(tomorrow);
-            dom.tomorrowDuty.innerHTML = `<div class="person-badge bg-${tomorrowPerson.color}">${tomorrowPerson.name}</div>`;
+
+        /**
+         * 渲染整个日历
+         */
+        function renderCalendar() {
+            elements.calendarGrid.innerHTML = '';
+
+            const monthNames = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"];
+            elements.currentMonthDisplay.textContent = `${currentYear}年${monthNames[currentMonth]}`;
+
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const firstDayOfWeek = firstDay.getDay();
+
+            const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate();
+            for (let i = firstDayOfWeek; i > 0; i--) {
+                elements.calendarGrid.appendChild(renderCalendarCell(prevMonthLastDay - i + 1, currentMonth - 1, currentYear, false));
+            }
+
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                elements.calendarGrid.appendChild(renderCalendarCell(i, currentMonth, currentYear, true));
+            }
+
+            const nextMonthDaysToAdd = 42 - (firstDayOfWeek + lastDay.getDate());
+            for (let i = 1; i <= nextMonthDaysToAdd; i++) {
+                elements.calendarGrid.appendChild(renderCalendarCell(i, currentMonth + 1, currentYear, false));
+            }
+
+            elements.lastUpdated.textContent = new Date().toLocaleString('zh-CN', { 
+                year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+            });
         }
+
+        /**
+         * 渲染今日/明日值班信息
+         */
+        function renderRecentDuty() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+
+            const renderDuty = (container, person) => {
+                container.innerHTML = '';
+                if (person) {
+                    if (person.isPair) {
+                        container.innerHTML = `
+                            <div class="p-2 rounded-lg ${person.color} font-medium text-sm">${person.name} <span class="text-xs bg-white/50 rounded px-1">早</span></div>
+                            <div class="p-2 rounded-lg ${person.pairColor} font-medium text-sm">${person.pairName} <span class="text-xs bg-white/50 rounded px-1">晚</span></div>
+                        `;
+                    } else {
+                        container.innerHTML = `<div class="p-2 rounded-lg ${person.color} font-medium text-sm">${person.name}</div>`;
+                    }
+                }
+            };
+
+            renderDuty(elements.todayDutyContent, getDutyPerson(today));
+            renderDuty(elements.tomorrowDutyContent, getDutyPerson(tomorrow));
+        }
+
+        // 5. 事件监听
+        function setupEventListeners() {
+            elements.prevMonthBtn.addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                renderCalendar();
+            });
+
+            elements.nextMonthBtn.addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                renderCalendar();
+            });
+        }
+
+        // 6. 初始化应用
+        function initApp() {
+            renderCalendar();
+            renderRecentDuty();
+            setupEventListeners();
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
